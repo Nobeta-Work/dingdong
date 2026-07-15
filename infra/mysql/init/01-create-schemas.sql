@@ -1,0 +1,10 @@
+CREATE DATABASE IF NOT EXISTS dingdong_user DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE DATABASE IF NOT EXISTS dingdong_product DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE DATABASE IF NOT EXISTS dingdong_order DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE DATABASE IF NOT EXISTS dingdong_pay DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+
+GRANT ALL PRIVILEGES ON dingdong_user.* TO 'dingdong'@'%';
+GRANT ALL PRIVILEGES ON dingdong_product.* TO 'dingdong'@'%';
+GRANT ALL PRIVILEGES ON dingdong_order.* TO 'dingdong'@'%';
+GRANT ALL PRIVILEGES ON dingdong_pay.* TO 'dingdong'@'%';
+FLUSH PRIVILEGES;

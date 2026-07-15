@@ -6,6 +6,14 @@ docs/*/GUIDE.md
 .agents/
 
 # Dependencies
+target/
+node_modules/
+
+# Local environment
+.env
+.env.local
+.idea/
+*.iml
 
 # Cache & Temp
 tmp/

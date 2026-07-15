@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: product-service
+  config:
+    import: "optional:nacos:product-service.yaml?group=DEFAULT_GROUP&refreshEnabled=true"
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      discovery:
+        enabled: ${NACOS_ENABLED:false}
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/dingdong_product?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USER:dingdong}
+    password: ${MYSQL_PASSWORD:dingdong_dev}
+
+server:
+  port: ${SERVER_PORT:8082}
+
+dubbo:
+  application:
+    name: ${spring.application.name}
+  protocol:
+    name: tri
+    port: -1
+  registry:
+    address: nacos://${NACOS_SERVER_ADDR:127.0.0.1:8848}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    baseline: v0.1
