@@ -1,0 +1,12 @@
+# AI Helper
+CLAUDE.md
+AGENTS.md
+.claude/
+docs/*/GUIDE.md
+.agents/
+
+# Dependencies
+
+# Cache & Temp
+tmp/
+docs/PRD.docx
