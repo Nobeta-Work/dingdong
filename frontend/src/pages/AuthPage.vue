@@ -1,0 +1,12 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { BellFilled, Lock, User } from '@element-plus/icons-vue'
+import { authApi } from '@/api/services'
+import { useSession } from '@/composables/session'
+
+const router = useRouter(); const { setUser } = useSession(); const mode = ref<'login' | 'register'>('login'); const loading = ref(false)
+const form = ref({ username: '', password: '', nickname: '', phone: '', email: '' })
+const submit = async () => { loading.value = true; try { if (mode.value === 'login') { const result = await authApi.login({ username: form.value.username, password: form.value.password }); localStorage.setItem('dingdong_token', result.token); setUser(result.user); router.replace(result.user.role === 'ADMIN' ? '/admin' : '/') } else { await authApi.register(form.value); mode.value = 'login' } } finally { loading.value = false } }
+</script>
+<template><div class="auth-page"><section class="auth-aside"><RouterLink to="/" class="brand"><span class="brand-mark"><el-icon><BellFilled /></el-icon></span><span>叮咚商城<small>好物准时到</small></span></RouterLink><div><span>从发现好物到安心收货</span><h1>每一次下单，<br />都有可靠回应。</h1><p>登录后即可管理购物车、地址和订单，继续你的品质生活。</p></div></section><section class="auth-panel"><el-card shadow="never" class="auth-card"><div class="auth-tabs"><button :class="{ active: mode === 'login' }" @click="mode = 'login'">登录</button><button :class="{ active: mode === 'register' }" @click="mode = 'register'">注册</button></div><p class="auth-lead">{{ mode === 'login' ? '欢迎回来，请登录你的账户' : '创建账户，开启叮咚购物之旅' }}</p><el-form :model="form" label-position="top" @submit.prevent="submit"><el-form-item label="用户名" required><el-input v-model="form.username" :prefix-icon="User" placeholder="请输入用户名" /></el-form-item><el-form-item v-if="mode === 'register'" label="昵称"><el-input v-model="form.nickname" placeholder="例如：叮咚用户" /></el-form-item><el-form-item v-if="mode === 'register'" label="手机号"><el-input v-model="form.phone" placeholder="选填" /></el-form-item><el-form-item v-if="mode === 'register'" label="邮箱"><el-input v-model="form.email" placeholder="选填" /></el-form-item><el-form-item label="密码" required><el-input v-model="form.password" :prefix-icon="Lock" type="password" show-password placeholder="请输入密码" /></el-form-item><el-button type="primary" size="large" native-type="submit" :loading="loading" class="auth-submit">{{ mode === 'login' ? '登录' : '注册账户' }}</el-button></el-form><p v-if="mode === 'login'" class="auth-note">本地演示管理员：admin / password</p></el-card></section></div></template>
