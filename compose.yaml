@@ -1,0 +1,112 @@
+name: dingdong
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: dingdong-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev}
+      MYSQL_DATABASE: dingdong_bootstrap
+      MYSQL_USER: ${MYSQL_USER:-dingdong}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dingdong_dev}
+      TZ: Asia/Shanghai
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./infra/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - dingdong-net
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: dingdong-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_dev}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_dev}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - dingdong-net
+
+  nacos:
+    image: nacos/nacos-server:v3.0.3
+    container_name: dingdong-nacos
+    restart: unless-stopped
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      NACOS_AUTH_ENABLE: "false"
+      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-ZGluZ2RvbmctZGV2ZWxvcG1lbnQtbmFjb3MtdG9rZW4tMjAyNg==}
+      NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-dingdong-identity}
+      NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE:-dingdong-dev}
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+      JVM_XMN: 128m
+      TZ: Asia/Shanghai
+    ports:
+      - "${NACOS_PORT:-8848}:8848"
+      - "${NACOS_CONSOLE_PORT:-8085}:8080"
+      - "9848:9848"
+      - "9849:9849"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8848/nacos/ > /dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+    networks:
+      - dingdong-net
+
+  rocketmq-namesrv:
+    image: apache/rocketmq:5.3.1
+    container_name: dingdong-rocketmq-namesrv
+    restart: unless-stopped
+    command: sh mqnamesrv
+    environment:
+      JAVA_OPT_EXT: "-Xms256m -Xmx256m -Xmn128m"
+      TZ: Asia/Shanghai
+    ports:
+      - "9876:9876"
+    networks:
+      - dingdong-net
+
+  rocketmq-broker:
+    image: apache/rocketmq:5.3.1
+    container_name: dingdong-rocketmq-broker
+    restart: unless-stopped
+    depends_on:
+      - rocketmq-namesrv
+    command: sh mqbroker -n rocketmq-namesrv:9876 -c /home/rocketmq/rocketmq-5.3.1/conf/broker.conf
+    environment:
+      JAVA_OPT_EXT: "-Xms256m -Xmx256m -Xmn128m"
+      TZ: Asia/Shanghai
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    volumes:
+      - ./infra/rocketmq/broker.conf:/home/rocketmq/rocketmq-5.3.1/conf/broker.conf:ro
+    networks:
+      - dingdong-net
+
+networks:
+  dingdong-net:
+    name: dingdong-net
+
+volumes:
+  mysql-data:
+  redis-data:
