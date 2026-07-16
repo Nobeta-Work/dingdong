@@ -1,28 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
-const form = ref({ nickname: '\u5f20\u5c0f\u5317', phone: '13800008888', email: 'zhang@example.com' })
-const saved = ref(false)
+import { onMounted, ref } from 'vue'
+import { authApi, type User } from '@/api/services'
+import { useSession } from '@/composables/session'
+const form = ref<Partial<User>>({}); const saved = ref(false); const { setUser } = useSession(); const loading = ref(true)
+const save = async () => { const user = await authApi.updateMe(form.value); form.value = user; setUser(user); saved.value = true }; onMounted(async () => { try { form.value = await authApi.me() } finally { loading.value = false } })
 </script>
-
-<template>
-  <div class="shell page personal-layout">
-    <aside class="personal-nav">
-      <h3>&#x4e2a;&#x4eba;&#x4e2d;&#x5fc3;</h3>
-      <RouterLink to="/profile" class="selected">&#x4e2a;&#x4eba;&#x8d44;&#x6599;</RouterLink>
-      <RouterLink to="/orders">&#x6211;&#x7684;&#x8ba2;&#x5355;</RouterLink>
-      <a>&#x6536;&#x8d27;&#x5730;&#x5740;</a><a>&#x8d26;&#x6237;&#x5b89;&#x5168;</a>
-    </aside>
-    <section class="profile-content">
-      <h1>&#x4e2a;&#x4eba;&#x8d44;&#x6599;</h1>
-      <div class="profile-card"><div class="avatar">&#x5f20;</div><div><b>&#x5f20;&#x5c0f;&#x5317;</b><p>&#x666e;&#x901a;&#x4f1a;&#x5458;</p><el-button plain size="small">&#x66f4;&#x6362;&#x5934;&#x50cf;</el-button></div></div>
-      <el-form :model="form" label-width="80px" class="profile-form">
-        <el-form-item label="&#x6635;&#x79f0;"><el-input v-model="form.nickname" /></el-form-item>
-        <el-form-item label="&#x624b;&#x673a;&#x53f7;"><el-input v-model="form.phone" /></el-form-item>
-        <el-form-item label="&#x90ae;&#x7bb1;"><el-input v-model="form.email" /></el-form-item>
-        <el-form-item><el-button type="primary" @click="saved = true">&#x4fdd;&#x5b58;&#x4fee;&#x6539;</el-button></el-form-item>
-      </el-form>
-      <el-alert v-if="saved" type="success" title="&#x8d44;&#x6599;&#x5df2;&#x4fdd;&#x5b58;" show-icon :closable="false" />
-    </section>
-  </div>
-</template>
+<template><div class="shell page personal-layout"><aside class="personal-nav"><h3>个人中心</h3><RouterLink to="/profile" class="selected">个人资料</RouterLink><RouterLink to="/orders">我的订单</RouterLink><a>收货地址</a><a>账户安全</a></aside><section class="profile-content"><h1>个人资料</h1><el-skeleton :loading="loading" animated :rows="5"><template #default><div class="profile-card"><el-avatar :size="68" :src="form.avatarUrl">{{ form.nickname?.slice(0, 1) }}</el-avatar><div><b>{{ form.nickname }}</b><p>{{ form.username }}</p></div></div><el-form :model="form" label-width="80px" class="profile-form"><el-form-item label="昵称"><el-input v-model="form.nickname" /></el-form-item><el-form-item label="手机号"><el-input v-model="form.phone" /></el-form-item><el-form-item label="邮箱"><el-input v-model="form.email" /></el-form-item><el-form-item label="头像 URL"><el-input v-model="form.avatarUrl" placeholder="填写可公开访问的头像图片 URL" /></el-form-item><el-form-item><el-button type="primary" @click="save">保存修改</el-button></el-form-item></el-form><el-alert v-if="saved" type="success" title="资料已保存" show-icon :closable="false" /></template></el-skeleton></section></div></template>

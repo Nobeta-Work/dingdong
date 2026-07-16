@@ -12,6 +12,7 @@ import ProfilePage from './pages/ProfilePage.vue'
 import AdminDashboard from './pages/AdminDashboard.vue'
 import AdminProducts from './pages/AdminProducts.vue'
 import AdminOrders from './pages/AdminOrders.vue'
+import AuthPage from './pages/AuthPage.vue'
 
 export default createRouter({
   history: createWebHistory(),
@@ -22,6 +23,7 @@ export default createRouter({
       { path: 'orders', component: OrdersPage }, { path: 'profile', component: ProfilePage },
     ] },
     { path: '/admin', component: AdminLayout, children: [{ path: '', component: AdminDashboard }, { path: 'products', component: AdminProducts }, { path: 'orders', component: AdminOrders }] },
+    { path: '/auth', component: AuthPage },
   ],
   scrollBehavior: () => ({ top: 0 }),
 })

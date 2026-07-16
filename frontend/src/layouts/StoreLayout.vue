@@ -2,16 +2,18 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { BellFilled, ShoppingCart, Search, UserFilled, Location } from '@element-plus/icons-vue'
+import { useSession } from '@/composables/session'
 
 const router = useRouter()
 const keyword = ref('')
 const cartCount = ref(3)
 const submitSearch = () => router.push({ path: '/products', query: { q: keyword.value } })
 const active = computed(() => router.currentRoute.value.path)
+const { user, clear } = useSession()
 </script>
 
 <template>
-  <header class="topbar"><div class="shell topbar-inner"><span>欢迎来到叮咚商城</span><span class="topbar-links">北京 <el-icon><Location /></el-icon>　我的订单　客服中心　 <RouterLink to="/admin">商家后台</RouterLink></span></div></header>
+  <header class="topbar"><div class="shell topbar-inner"><span>欢迎来到叮咚商城</span><span class="topbar-links">北京 <el-icon><Location /></el-icon>　<RouterLink to="/orders">我的订单</RouterLink>　客服中心　 <RouterLink v-if="user?.role === 'ADMIN'" to="/admin">商家后台</RouterLink><RouterLink v-else-if="!user" to="/auth">登录 / 注册</RouterLink><el-button v-else text size="small" @click="clear">退出登录</el-button></span></div></header>
   <header class="store-head"><div class="shell head-inner">
     <RouterLink class="brand" to="/"><span class="brand-mark"><el-icon><BellFilled /></el-icon></span><span>叮咚商城<small>好物准时到</small></span></RouterLink>
     <el-input v-model="keyword" class="search-input" placeholder="搜索商品、品牌或品类" @keyup.enter="submitSearch"><template #append><el-button :icon="Search" @click="submitSearch">搜索</el-button></template></el-input>
