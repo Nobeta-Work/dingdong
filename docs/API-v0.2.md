@@ -1,0 +1,156 @@
+---
+title: 叮咚商城 v0.2 接口契约
+aliases:
+  - API v0.2
+tags:
+  - project/ding-dong
+  - api/contract
+status: implemented
+updated: 2026-07-16
+related:
+  - "[[PRD|产品需求文档]]"
+  - "[[TEAM|开发迭代说明]]"
+---
+
+# 叮咚商城 v0.2 接口契约
+
+> [!important] 使用约定
+> 本文对应 `user-service`（8081）和 `product-service`（8082）的 v0.2 实现。统一响应为 `{"code":"OK","message":"success","data":...,"traceId":null}`；除登录、注册和商品浏览外，请携带 `Authorization: Bearer <JWT>`。
+
+## 1. 用户与鉴权
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/auth/register` | 注册普通用户 |
+| POST | `/api/auth/login` | 用户名密码登录，返回 JWT |
+| GET | `/api/users/me` | 获取当前用户资料 |
+| PUT | `/api/users/me` | 更新昵称、手机号、邮箱、头像 |
+
+### 注册
+
+```json
+POST /api/auth/register
+{
+  "username": "buyer_001",
+  "password": "Passw0rd!",
+  "nickname": "叮咚用户",
+  "phone": "13800138000",
+  "email": "buyer@example.com"
+}
+```
+
+### 登录
+
+```json
+POST /api/auth/login
+{"username":"admin","password":"password"}
+```
+
+```json
+{
+  "code": "OK",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "expiresIn": 7200,
+    "user": {"id": 1, "username": "admin", "nickname": "商城管理员", "role": "ADMIN"}
+  }
+}
+```
+
+> [!warning] 演示账号
+> `admin / password` 只存在于首次本地数据库初始化。公网或共享环境必须在部署时替换。
+
+## 2. 收货地址
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/addresses` | 查询当前用户地址 |
+| POST | `/api/addresses` | 新增地址 |
+| PUT | `/api/addresses/{id}` | 修改自己的地址 |
+| DELETE | `/api/addresses/{id}` | 删除自己的地址 |
+
+```json
+{
+  "receiverName": "张三",
+  "receiverPhone": "13800138000",
+  "province": "陕西省",
+  "city": "西安市",
+  "district": "雁塔区",
+  "detailAddress": "科技路 1 号",
+  "defaultAddress": true
+}
+```
+
+设置 `defaultAddress=true` 会自动取消该用户其他地址的默认标记。
+
+## 3. 公开商品接口
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/categories` | 启用的分类 |
+| GET | `/api/brands` | 启用的品牌 |
+| GET | `/api/products` | 上架商品分页检索 |
+| GET | `/api/products/{id}` | 上架商品详情和可售 SKU |
+
+`GET /api/products` 支持：`keyword`、`categoryId`、`brandId`、`minPrice`、`maxPrice`、`sort`、`page`、`size`。
+
+- `sort`：`newest`（默认）、`price-asc`、`price-desc`、`sales`
+- `page`：从 1 开始；`size`：1-100，默认 20
+
+## 4. 管理端商品接口
+
+> [!danger] 权限
+> 所有 `/api/admin/**` 请求必须携带 `ADMIN` 角色 JWT。商品服务会独立校验 JWT 签名、过期时间和角色，不能仅依赖前端隐藏按钮。
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET/POST/PUT | `/api/admin/categories`、`/api/admin/categories/{id}` | 分类查询、新建、修改 |
+| GET/POST/PUT | `/api/admin/brands`、`/api/admin/brands/{id}` | 品牌查询、新建、修改 |
+| POST/GET/PUT | `/api/admin/products`、`/api/admin/products/{id}` | SPU 新建、查看、修改 |
+| POST/PUT | `/api/admin/products/{spuId}/skus`、`/api/admin/products/{spuId}/skus/{id}` | SKU 新建、修改 |
+
+### 分类与品牌请求
+
+```json
+{"name":"手机通讯","parentId":0,"sortOrder":10,"status":1}
+```
+
+```json
+{"name":"叮咚精选","logoUrl":"https://example.com/brand.png","sortOrder":10,"status":1}
+```
+
+### SPU 与 SKU 请求
+
+```json
+{
+  "title": "叮咚手机 Pro",
+  "subtitle": "演示商品",
+  "description": "用于 v0.2 商品浏览演示",
+  "mainImageUrl": "https://example.com/product.png",
+  "categoryId": 1,
+  "brandId": 1,
+  "status": 1
+}
+```
+
+```json
+{
+  "skuCode": "DD-PRO-BLUE-128",
+  "specJson": "{\"颜色\":\"蓝色\",\"存储\":\"128G\"}",
+  "price": 2999.00,
+  "availableStock": 100,
+  "status": 1
+}
+```
+
+## 5. 主要错误码
+
+| 错误码 | 含义 |
+|---|---|
+| `AUTH_LOGIN_FAILED` | 用户名或密码错误 |
+| `AUTH_TOKEN_INVALID` / `AUTH_TOKEN_EXPIRED` | 令牌无效或过期 |
+| `AUTH_FORBIDDEN` | 非管理员访问管理端 |
+| `USER_USERNAME_EXISTS` / `USER_PHONE_EXISTS` / `USER_EMAIL_EXISTS` | 注册或资料唯一性冲突 |
+| `USER_ADDRESS_NOT_FOUND` | 地址不属于当前用户或已删除 |
+| `PRODUCT_CATEGORY_NOT_FOUND` / `PRODUCT_BRAND_NOT_FOUND` | 商品关联分类或品牌不存在 |
+| `PRODUCT_SPU_NOT_FOUND` / `PRODUCT_SKU_NOT_FOUND` | 商品或 SKU 不存在、不可售 |

@@ -2,8 +2,10 @@ package cn.nobeta.dingdong.user;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.mybatis.spring.annotation.MapperScan;
 
 @SpringBootApplication
+@MapperScan("cn.nobeta.dingdong.user.mapper")
 public class UserApplication {
 
     public static void main(String[] args) {

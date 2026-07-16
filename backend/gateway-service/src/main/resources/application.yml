@@ -30,4 +30,14 @@ management:
 info:
   app:
     name: ${spring.application.name}
-    baseline: v0.1
+    baseline: v0.3
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:dingdong-change-this-development-secret-at-least-32-bytes}
+
+app:
+  routes:
+    user: ${USER_SERVICE_URI:http://127.0.0.1:8081}
+    product: ${PRODUCT_SERVICE_URI:http://127.0.0.1:8082}
+    order: ${ORDER_SERVICE_URI:http://127.0.0.1:8083}

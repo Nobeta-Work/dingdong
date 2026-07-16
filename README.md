@@ -43,7 +43,11 @@ docker compose ps
 | Nacos 控制台 | `http://127.0.0.1:8085/` | 开发基线关闭鉴权 |
 | RocketMQ NameServer | `127.0.0.1:9876` | 无 |
 
+首次初始化会创建开发管理员：`admin` / `password`。仅用于本地演示，公网环境必须替换密码。
+
 可从 `.env.example` 复制为 `.env` 覆盖默认开发凭证；`.env` 不会提交到 Git。
+
+启动 Java 服务时，`JWT_SECRET` 必须在 Gateway、用户服务与商品服务保持一致；当前默认值仅适用于本地开发。
 
 ### 构建与运行服务
 
@@ -64,3 +68,5 @@ mvn -pl gateway-service spring-boot:run -Dspring-boot.run.arguments="--NACOS_ENA
 [Git 流程说明](docs/GIT.md)
 [需求文档](docs/PRD.md)
 [开发迭代说明](docs/TEAM.md)
+[v0.2 接口契约](docs/API-v0.2.md)
+[v0.3 交易接口契约](docs/API-v0.3.md)
