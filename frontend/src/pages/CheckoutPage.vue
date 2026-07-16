@@ -1,0 +1,7 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { products, formatPrice } from '@/mock'
+const router = useRouter(); const address = ref(1); const remark = ref(''); const product = products[0]
+</script>
+<template><div class="shell page"><div class="checkout-steps"><span class="done">1. 确认订单</span><i></i><span>2. 模拟支付</span><i></i><span>3. 完成</span></div><h1 class="checkout-title">确认订单信息</h1><section class="checkout-box"><h2>收货地址</h2><div class="address-list"><article :class="{ selected: address === 1 }" @click="address = 1"><b>张小北　138****8888</b><p>北京市 朝阳区 三里屯街道 叮咚路 88 号 5 栋 1201</p><span>默认地址</span></article><article :class="{ selected: address === 2 }" @click="address = 2"><b>张小北　138****8888</b><p>北京市 海淀区 中关村大街 1 号 科技园 A 座</p></article><el-button plain>+ 使用新地址</el-button></div></section><section class="checkout-box"><h2>商品清单</h2><article class="checkout-product"><img :src="product.image" :alt="product.name" /><div><b>{{ product.name }}</b><p>{{ product.specs.join(' · ') }}</p></div><span>¥{{ formatPrice(product.price) }} × 1</span><strong>¥{{ formatPrice(product.price) }}</strong></article><div class="checkout-remark"><span>订单备注</span><el-input v-model="remark" placeholder="选填，请先和商家协商一致" maxlength="50" /></div></section><section class="checkout-total"><p>商品总额：<b>¥{{ formatPrice(product.price) }}</b></p><p>运费：<b>¥0.00</b></p><h2>应付金额：<strong>¥{{ formatPrice(product.price) }}</strong></h2><el-button type="primary" size="large" @click="router.push('/payment')">提交订单</el-button></section></div></template>
