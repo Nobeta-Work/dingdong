@@ -38,4 +38,17 @@ management:
 info:
   app:
     name: ${spring.application.name}
-    baseline: v0.1
+    baseline: v0.4
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:dingdong-change-this-development-secret-at-least-32-bytes}
+
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV_ADDR:127.0.0.1:9876}
+  producer:
+    group: ${ROCKETMQ_PAYMENT_PRODUCER_GROUP:payment-producer}
+
+app:
+  rocketmq:
+    payment-success-topic: ${ROCKETMQ_PAYMENT_SUCCESS_TOPIC:payment-success}

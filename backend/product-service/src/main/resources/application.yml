@@ -12,6 +12,11 @@ spring:
     url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/dingdong_product?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USER:dingdong}
     password: ${MYSQL_PASSWORD:dingdong_dev}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_dev}
 
 server:
   port: ${SERVER_PORT:8082}
@@ -38,4 +43,8 @@ management:
 info:
   app:
     name: ${spring.application.name}
-    baseline: v0.1
+    baseline: v0.5
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:dingdong-change-this-development-secret-at-least-32-bytes}
