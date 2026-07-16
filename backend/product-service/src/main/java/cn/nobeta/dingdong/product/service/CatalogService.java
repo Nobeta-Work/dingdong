@@ -10,8 +10,8 @@ import java.util.List;
 
 @Service
 public class CatalogService {
-    private final CategoryMapper categoryMapper; private final BrandMapper brandMapper; private final ProductMapper productMapper;
-    public CatalogService(CategoryMapper categoryMapper, BrandMapper brandMapper, ProductMapper productMapper) { this.categoryMapper=categoryMapper;this.brandMapper=brandMapper;this.productMapper=productMapper; }
+    private final CategoryMapper categoryMapper; private final BrandMapper brandMapper; private final ProductMapper productMapper; private final ProductDetailCacheService detailCacheService;
+    public CatalogService(CategoryMapper categoryMapper, BrandMapper brandMapper, ProductMapper productMapper, ProductDetailCacheService detailCacheService) { this.categoryMapper=categoryMapper;this.brandMapper=brandMapper;this.productMapper=productMapper;this.detailCacheService=detailCacheService; }
     public List<Category> categories(boolean enabledOnly){return enabledOnly?categoryMapper.findEnabled():categoryMapper.findAll();}
     public List<Brand> brands(boolean enabledOnly){return enabledOnly?brandMapper.findEnabled():brandMapper.findAll();}
     @Transactional public Category saveCategory(Long id, CategoryRequest request) {
@@ -32,12 +32,12 @@ public class CatalogService {
         if(categoryMapper.findById(request.categoryId())==null)throw new BusinessException("PRODUCT_CATEGORY_NOT_FOUND","商品分类不存在");
         if(brandMapper.findById(request.brandId())==null)throw new BusinessException("PRODUCT_BRAND_NOT_FOUND","商品品牌不存在");
         spu.setTitle(request.title());spu.setSubtitle(request.subtitle());spu.setDescription(request.description());spu.setMainImageUrl(request.mainImageUrl());spu.setCategoryId(request.categoryId());spu.setBrandId(request.brandId());spu.setStatus(request.status());
-        if(id==null)productMapper.insertSpu(spu);else productMapper.updateSpu(spu);return requireSpu(spu.getId());
+        if(id==null)productMapper.insertSpu(spu);else productMapper.updateSpu(spu);detailCacheService.evict(spu.getId());return requireSpu(spu.getId());
     }
     @Transactional public ProductSku saveSku(Long spuId, Long id, SkuRequest request) {
         requireSpu(spuId); ProductSku sku=id==null?new ProductSku():requireSku(spuId,id);
         sku.setSpuId(spuId);sku.setSkuCode(request.skuCode());sku.setSpecJson(request.specJson());sku.setPrice(request.price());sku.setAvailableStock(request.availableStock());sku.setStatus(request.status());
-        if(id==null) productMapper.insertSku(sku); else productMapper.updateSku(sku); return requireSku(spuId,sku.getId());
+        if(id==null) productMapper.insertSku(sku); else productMapper.updateSku(sku); detailCacheService.evict(spuId); return requireSku(spuId,sku.getId());
     }
     public ProductSpu requireSpu(Long id){ProductSpu spu=productMapper.findSpuById(id);if(spu==null)throw new BusinessException("PRODUCT_SPU_NOT_FOUND","商品不存在");return spu;}
     public ProductSpu requirePublishedSpu(Long id){ProductSpu spu=productMapper.findPublishedSpuById(id);if(spu==null)throw new BusinessException("PRODUCT_SPU_NOT_FOUND","商品不存在或已下架");return spu;}

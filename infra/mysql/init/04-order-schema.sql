@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS order_status_log (
  id BIGINT NOT NULL AUTO_INCREMENT,order_id BIGINT NOT NULL,from_status VARCHAR(32) NULL,to_status VARCHAR(32) NOT NULL,operator_type VARCHAR(32) NOT NULL,operator_id BIGINT NULL,remark VARCHAR(255) NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
  PRIMARY KEY(id),KEY idx_order_status_log_order(order_id,id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS order_outbox (
+ id BIGINT NOT NULL AUTO_INCREMENT,event_type VARCHAR(64) NOT NULL,order_no VARCHAR(32) NOT NULL,status VARCHAR(16) NOT NULL DEFAULT 'PENDING',retry_count INT NOT NULL DEFAULT 0,last_error VARCHAR(512) NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,sent_at DATETIME NULL,
+ PRIMARY KEY(id),KEY idx_order_outbox_pending(status,id),KEY idx_order_outbox_order(order_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE TABLE IF NOT EXISTS order_item (
  id BIGINT NOT NULL AUTO_INCREMENT,order_id BIGINT NOT NULL,sku_id BIGINT NOT NULL,sku_code VARCHAR(64) NOT NULL,product_title VARCHAR(128) NOT NULL,product_image_url VARCHAR(512) NULL,spec_json VARCHAR(1000) NOT NULL,unit_price DECIMAL(12,2) NOT NULL,quantity INT NOT NULL,total_amount DECIMAL(12,2) NOT NULL,
  PRIMARY KEY(id),KEY idx_order_item_order(order_id)

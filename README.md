@@ -1,7 +1,7 @@
 
 ## 叮咚商城
 
-面向实训交付与 Java 后端求职展示的前后端分离微服务商城。详细范围见 [PRD](docs/PRD.md)，开发迭代说明见 [TEAM](docs/TEAM.md)。
+叮咚商城是一个基于 Spring Cloud Alibaba (2025.0.0.0) 开发的前后端分离电商项目。
 
 ## 技术栈
 
@@ -71,3 +71,4 @@ mvn -pl gateway-service spring-boot:run -Dspring-boot.run.arguments="--NACOS_ENA
 [v0.2 接口契约](docs/API-v0.2.md)
 [v0.3 交易接口契约](docs/API-v0.3.md)
 [v0.4 支付与履约接口契约](docs/API-v0.4.md)
+[v0.5 可靠性说明](docs/API-v0.5.md)

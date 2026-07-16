@@ -5,6 +5,7 @@ import cn.nobeta.dingdong.product.api.ProductResponses.*;
 import cn.nobeta.dingdong.product.domain.ProductQuery;
 import cn.nobeta.dingdong.product.mapper.ProductMapper;
 import cn.nobeta.dingdong.product.service.CatalogService;
+import cn.nobeta.dingdong.product.service.ProductDetailCacheService;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
@@ -12,8 +13,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 public class ProductController {
-    private final CatalogService catalogService; private final ProductMapper productMapper;
-    public ProductController(CatalogService catalogService, ProductMapper productMapper){this.catalogService=catalogService;this.productMapper=productMapper;}
+    private final CatalogService catalogService; private final ProductMapper productMapper; private final ProductDetailCacheService detailCacheService;
+    public ProductController(CatalogService catalogService, ProductMapper productMapper, ProductDetailCacheService detailCacheService){this.catalogService=catalogService;this.productMapper=productMapper;this.detailCacheService=detailCacheService;}
     @GetMapping("/categories") public ApiResponse<List<CategoryResponse>> categories(){return ApiResponse.success(catalogService.categories(true).stream().map(CategoryResponse::from).toList());}
     @GetMapping("/brands") public ApiResponse<List<BrandResponse>> brands(){return ApiResponse.success(catalogService.brands(true).stream().map(BrandResponse::from).toList());}
     @GetMapping("/products")
@@ -23,5 +24,5 @@ public class ProductController {
         ProductQuery query=new ProductQuery(keyword,categoryId,brandId,minPrice,maxPrice,orderBy,normalizedSize,(normalizedPage-1)*normalizedSize);
         return ApiResponse.success(new PageResponse<>(productMapper.search(query).stream().map(ProductSummary::from).toList(),productMapper.countSearch(query),normalizedPage,normalizedSize));
     }
-    @GetMapping("/products/{id}") public ApiResponse<ProductDetail> detail(@PathVariable Long id){var spu=catalogService.requirePublishedSpu(id);return ApiResponse.success(ProductDetail.from(spu,catalogService.skus(id,true)));}
+    @GetMapping("/products/{id}") public ApiResponse<ProductDetail> detail(@PathVariable Long id){return ApiResponse.success(detailCacheService.get(id));}
 }
