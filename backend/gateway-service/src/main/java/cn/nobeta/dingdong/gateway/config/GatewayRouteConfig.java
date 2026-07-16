@@ -12,11 +12,14 @@ public class GatewayRouteConfig {
     RouteLocator dingdongRoutes(RouteLocatorBuilder builder,
                                 @Value("${app.routes.user:http://127.0.0.1:8081}") String user,
                                 @Value("${app.routes.product:http://127.0.0.1:8082}") String product,
-                                @Value("${app.routes.order:http://127.0.0.1:8083}") String order) {
+                                @Value("${app.routes.order:http://127.0.0.1:8083}") String order,
+                                @Value("${app.routes.pay:http://127.0.0.1:8084}") String pay) {
         return builder.routes()
                 .route("user-service", r -> r.path("/api/auth/**", "/api/users/**", "/api/addresses/**").uri(user))
+                .route("order-admin-service", r -> r.path("/api/admin/orders/**").uri(order))
                 .route("product-service", r -> r.path("/api/categories/**", "/api/brands/**", "/api/products/**", "/api/admin/**").uri(product))
                 .route("order-service", r -> r.path("/api/cart/**", "/api/orders/**").uri(order))
+                .route("pay-service", r -> r.path("/api/payments/**").uri(pay))
                 .build();
     }
 }

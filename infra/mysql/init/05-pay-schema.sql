@@ -1,0 +1,5 @@
+USE dingdong_pay;
+CREATE TABLE IF NOT EXISTS payment_order (
+ id BIGINT NOT NULL AUTO_INCREMENT,payment_no VARCHAR(32) NOT NULL,order_no VARCHAR(32) NOT NULL,user_id BIGINT NOT NULL,amount DECIMAL(12,2) NOT NULL,channel VARCHAR(32) NOT NULL,status VARCHAR(32) NOT NULL,transaction_no VARCHAR(64) NULL,paid_at DATETIME NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY(id),UNIQUE KEY uk_payment_order_no(payment_no),UNIQUE KEY uk_payment_order_business(order_no),KEY idx_payment_order_user(user_id,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

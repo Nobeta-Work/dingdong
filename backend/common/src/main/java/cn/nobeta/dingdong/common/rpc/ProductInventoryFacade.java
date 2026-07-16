@@ -8,6 +8,7 @@ import java.util.List;
 public interface ProductInventoryFacade {
     List<SkuSnapshot> lockInventory(String orderNo, List<LockItem> items);
     void unlockInventory(String orderNo);
+    void confirmInventory(String orderNo);
     List<SkuSnapshot> getSkuSnapshots(List<Long> skuIds);
 
     record LockItem(Long skuId, Integer quantity) implements Serializable { }

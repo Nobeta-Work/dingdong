@@ -43,3 +43,13 @@ info:
 security:
   jwt:
     secret: ${JWT_SECRET:dingdong-change-this-development-secret-at-least-32-bytes}
+
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV_ADDR:127.0.0.1:9876}
+  consumer:
+    group: ${ROCKETMQ_ORDER_CONSUMER_GROUP:order-payment-consumer}
+
+app:
+  rocketmq:
+    payment-success-topic: ${ROCKETMQ_PAYMENT_SUCCESS_TOPIC:payment-success}
+    payment-consumer-group: ${ROCKETMQ_ORDER_CONSUMER_GROUP:order-payment-consumer}

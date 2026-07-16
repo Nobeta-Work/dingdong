@@ -40,6 +40,17 @@ public class ProductInventoryFacadeImpl implements ProductInventoryFacade {
         productMapper.releaseLocks(orderNo);
     }
 
+    @Override @Transactional
+    public void confirmInventory(String orderNo) {
+        List<InventoryLockRecord> locks = productMapper.findActiveLocks(orderNo);
+        for (InventoryLockRecord lock : locks) {
+            if (productMapper.confirmStock(lock.getSkuId(), lock.getQuantity()) == 0) {
+                throw new BusinessException("INVENTORY_CONFIRM_FAILED", "库存锁定记录异常");
+            }
+        }
+        productMapper.confirmLocks(orderNo);
+    }
+
     @Override
     public List<SkuSnapshot> getSkuSnapshots(List<Long> skuIds) {
         if (skuIds == null || skuIds.isEmpty()) return List.of();

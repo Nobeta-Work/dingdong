@@ -32,5 +32,12 @@ public class OrderService {
  public List<OrderItem> items(Long orderId){return orderMapper.findItems(orderId);}
  public List<MallOrder> page(Long userId,int page,int size){return orderMapper.findPage(userId,size,(page-1)*size);}
  public long count(Long userId){return orderMapper.countByUserId(userId);}
+ @Transactional public void markPaid(String orderNo,String paymentNo,java.time.LocalDateTime paidAt){
+  MallOrder order=requireOrder(orderNo);if("PAID".equals(order.getStatus()))return;if(!"PENDING_PAYMENT".equals(order.getStatus()))throw new BusinessException("ORDER_STATUS_INVALID","当前订单状态不允许支付");
+  if(orderMapper.updateStatus(orderNo,"PENDING_PAYMENT","PAID")==0)return;productFacade.confirmInventory(orderNo);orderMapper.insertStatusLog(order.getId(),"PENDING_PAYMENT","PAID","PAYMENT",null,"支付单："+paymentNo);
+ }
+ @Transactional public MallOrder ship(String orderNo,String carrier,String trackingNo,Long adminId){MallOrder order=requireOrder(orderNo);if(orderMapper.ship(orderNo,carrier,trackingNo)==0)throw new BusinessException("ORDER_STATUS_INVALID","仅已支付订单可发货");orderMapper.insertStatusLog(order.getId(),"PAID","SHIPPED","ADMIN",adminId,"模拟发货："+carrier+"/"+trackingNo);return requireOrder(orderNo);}
+ @Transactional public MallOrder confirmReceipt(Long userId,String orderNo){MallOrder order=get(userId,orderNo);if(orderMapper.updateStatus(orderNo,"SHIPPED","COMPLETED")==0)throw new BusinessException("ORDER_STATUS_INVALID","仅已发货订单可确认收货");orderMapper.insertStatusLog(order.getId(),"SHIPPED","COMPLETED","USER",userId,"确认收货");return requireOrder(orderNo);}
+ public MallOrder requireOrder(String orderNo){MallOrder order=orderMapper.findByOrderNo(orderNo);if(order==null)throw new BusinessException("ORDER_NOT_FOUND","订单不存在");return order;}
  private String nextOrderNo(){return "DD"+LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"))+String.format("%03d",new Random().nextInt(1000));}
 }

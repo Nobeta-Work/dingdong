@@ -5,9 +5,13 @@ CREATE TABLE IF NOT EXISTS cart_item (
  PRIMARY KEY(id),UNIQUE KEY uk_cart_user_sku(user_id,sku_id,deleted),KEY idx_cart_user(user_id,deleted)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE TABLE IF NOT EXISTS mall_order (
- id BIGINT NOT NULL AUTO_INCREMENT,order_no VARCHAR(32) NOT NULL,user_id BIGINT NOT NULL,receiver_name VARCHAR(32) NOT NULL,receiver_phone VARCHAR(16) NOT NULL,receiver_address VARCHAR(256) NOT NULL,total_amount DECIMAL(12,2) NOT NULL,status VARCHAR(32) NOT NULL,
+ id BIGINT NOT NULL AUTO_INCREMENT,order_no VARCHAR(32) NOT NULL,user_id BIGINT NOT NULL,receiver_name VARCHAR(32) NOT NULL,receiver_phone VARCHAR(16) NOT NULL,receiver_address VARCHAR(256) NOT NULL,total_amount DECIMAL(12,2) NOT NULL,status VARCHAR(32) NOT NULL,carrier VARCHAR(64) NULL,tracking_no VARCHAR(64) NULL,shipped_at DATETIME NULL,
  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
  PRIMARY KEY(id),UNIQUE KEY uk_mall_order_no(order_no),KEY idx_mall_order_user(user_id,id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS order_status_log (
+ id BIGINT NOT NULL AUTO_INCREMENT,order_id BIGINT NOT NULL,from_status VARCHAR(32) NULL,to_status VARCHAR(32) NOT NULL,operator_type VARCHAR(32) NOT NULL,operator_id BIGINT NULL,remark VARCHAR(255) NULL,created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(id),KEY idx_order_status_log_order(order_id,id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 CREATE TABLE IF NOT EXISTS order_item (
  id BIGINT NOT NULL AUTO_INCREMENT,order_id BIGINT NOT NULL,sku_id BIGINT NOT NULL,sku_code VARCHAR(64) NOT NULL,product_title VARCHAR(128) NOT NULL,product_image_url VARCHAR(512) NULL,spec_json VARCHAR(1000) NOT NULL,unit_price DECIMAL(12,2) NOT NULL,quantity INT NOT NULL,total_amount DECIMAL(12,2) NOT NULL,

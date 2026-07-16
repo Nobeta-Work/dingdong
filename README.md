@@ -70,3 +70,4 @@ mvn -pl gateway-service spring-boot:run -Dspring-boot.run.arguments="--NACOS_ENA
 [开发迭代说明](docs/TEAM.md)
 [v0.2 接口契约](docs/API-v0.2.md)
 [v0.3 交易接口契约](docs/API-v0.3.md)
+[v0.4 支付与履约接口契约](docs/API-v0.4.md)

@@ -41,3 +41,4 @@ app:
     user: ${USER_SERVICE_URI:http://127.0.0.1:8081}
     product: ${PRODUCT_SERVICE_URI:http://127.0.0.1:8082}
     order: ${ORDER_SERVICE_URI:http://127.0.0.1:8083}
+    pay: ${PAY_SERVICE_URI:http://127.0.0.1:8084}
