@@ -11,8 +11,8 @@ import java.util.List;
 
 /**
  * 购物车业务服务
- * <p>管理用户的购物车状态，支持添加商品、更新数量/选中状态、批量删除等操作。
- * 与产品服务（product-service）通过 Dubbo RPC 交互，确保商品有效性。</p>
+ * 管理用户的购物车状态，支持添加商品、更新数量/选中状态、批量删除等操作。
+ * 与产品服务（product-service）通过 Dubbo RPC 交互，确保商品有效性。
  */
 @Service
 public class CartService {
@@ -26,12 +26,13 @@ public class CartService {
 
     /**
      * 添加商品到购物车（幂等合并）
-     * <ol>
-     * <li>通过 RPC 验证商品 SKU 存在并获取快照</li>
-     * <li>查询该用户是否已存在该 SKU 的购物车项</li>
-     * <li>若不存在则创建新项，否则累加数量（上限 99）</li>
-     * <li>标记为选中状态</li>
-     * </ol>
+     * 价格校验链路辅助：通过 RPC 调用 ProductInventoryFacade#getSkuSnapshots
+     * 验证商品 SKU 存在且在售，确保用户无法将无效商品加入购物车。
+     * 处理流程：
+     *   1. 通过 RPC 验证商品 SKU 存在并获取快照
+     *   2. 查询该用户是否已存在该 SKU 的购物车项
+     *   3. 若不存在则创建新项，否则累加数量（上限 99）
+     *   4. 标记为选中状态
      */
     @Transactional public CartItem add(Long userId,AddCartItemRequest r){
         // 1. 验证商品有效性（调用产品服务）
@@ -78,10 +79,8 @@ public class CartService {
 
     /**
      * 获取待结算的购物车项 — 为订单创建服务
-     * <ul>
-     * <li>当 {@code ids} 为 {@code null} 或空列表时，返回所有当前用户已选中的商品</li>
-     * <li>当 {@code ids} 不为空时，返回列表中包含的所有购物车项（需全部存在）</li>
-     * </ul>
+     * - 当 ids 为 null 或空列表时，返回所有当前用户已选中的商品
+     * - 当 ids 不为空时，返回列表中包含的所有购物车项（需全部存在）
      * @param userId 当前用户 ID
      * @param ids 购物车项 ID 列表（可选）
      * @return 有效的购物车项列表
@@ -104,8 +103,7 @@ public class CartService {
 
     /**
      * 订单创建成功后批量删除购物车项（逻辑删除）
-     * <p>调用者需确保 {@code ids} 与 {@link #itemsForOrder} 返回的项一一对应，
-     * 避免误删用户未结算的商品。</p>
+     * 调用者需确保 ids 与 itemsForOrder 返回的项一一对应，避免误删用户未结算的商品。
      */
     @Transactional public void removeAfterOrder(Long userId,List<Long> ids){
         if(!ids.isEmpty())cartMapper.deleteBatch(userId,ids);

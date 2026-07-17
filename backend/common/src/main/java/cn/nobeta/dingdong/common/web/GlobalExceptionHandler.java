@@ -10,15 +10,28 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/** Common API error mapping used by the business services. */
+/**
+ * 全局异常处理器
+ * 价格校验链路异常处理说明：
+ * - BusinessException — 业务异常（如库存不足、SKU 不存在等），统一返回 400 Bad Request
+ * - MethodArgumentNotValidException / ConstraintViolationException — 参数校验异常
+ *   （如 SkuRequest.price 违反 @DecimalMin("0.01") 约束），返回字段级错误信息
+ * - Exception — 未预期异常，返回 500 Internal Server Error
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /** 处理业务异常（含价格校验链中的库存不足、SKU 不可售等） */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException exception) {
         return ResponseEntity.badRequest().body(ApiResponse.failure(exception.getCode(), exception.getMessage()));
     }
 
+    /**
+     * 处理参数校验异常（含价格字段校验失败）
+     * 当 SkuRequest#price() 的 @DecimalMin("0.01") 或 @Digits(integer=10,fraction=2)
+     * 约束被违反时触发，返回形如 "price: 价格必须大于等于 0.01" 的错误信息。
+     */
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})
     public ResponseEntity<ApiResponse<Void>> handleValidation(Exception exception) {
         String message = "请求参数不合法";
@@ -30,6 +43,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ApiResponse.failure("VALIDATION_ERROR", message));
     }
 
+    /** 处理未预期的系统异常 */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception exception) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
