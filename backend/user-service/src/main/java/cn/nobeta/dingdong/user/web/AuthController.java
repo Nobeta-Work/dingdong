@@ -7,6 +7,10 @@ import cn.nobeta.dingdong.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 认证控制器 —— 用户登录功能链路入口
+ * 所有 /api/auth/** 请求经 Gateway 路由到此处（此路径为公开接口，无需 token）
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -22,9 +26,20 @@ public class AuthController {
         // 调用注册服务完成用户创建，将领域实体转为响应 DTO（脱敏处理），包装为统一成功响应
         return ApiResponse.success(UserResponses.UserProfile.from(userService.register(request)));
     }
+
+    /**
+     * 用户登录接口 —— 登录链路核心入口
+     * 接收用户名 + 密码，委托 UserService.login() 完成凭证校验与 JWT 签发，
+     * 将生成的 token、有效期、脱敏用户信息封装为 LoginResponse 统一响应
+     *
+     * @param request 包含 username 和 password 的登录请求体
+     * @return 包含 JWT token、过期秒数、用户信息的统一响应
+     */
     @PostMapping("/login")
     public ApiResponse<UserResponses.LoginResponse> login(@Valid @RequestBody AuthRequests.LoginRequest request) {
+        // ① 调用 UserService.login()：查库校验用户名密码 → BCrypt 比对 → 校验账号状态 → 签发 JWT
         UserService.LoginResult result = userService.login(request);
+        // ② 将 LoginResult 中的 token、有效期和脱敏用户信息组装为 LoginResponse，包装为统一成功响应
         return ApiResponse.success(new UserResponses.LoginResponse(result.token(), result.expiresIn(), UserResponses.UserProfile.from(result.user())));
     }
 }

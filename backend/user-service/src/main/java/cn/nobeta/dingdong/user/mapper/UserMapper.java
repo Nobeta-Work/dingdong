@@ -6,12 +6,16 @@ import org.apache.ibatis.annotations.*;
 @Mapper
 public interface UserMapper {
     /**
-     * 按用户名查询未删除的用户
-     * 注册时用于校验用户名唯一性，以及插入后回查完整数据 
+     * 按用户名查询未删除的用户 —— 登录链路数据库查询入口
+     * 登录时通过此方法根据用户名获取完整用户信息（含 BCrypt 密码哈希），
+     * 再由 UserService 完成密码比对。条件 deleted=0 确保逻辑删除的用户不可登录。
      */
     @Select("select id, username, password_hash, nickname, phone, email, avatar_url, role, status, created_at, updated_at from mall_user where username = #{username} and deleted = 0")
     MallUser findByUsername(String username);
 
+    /**
+     * 按用户 ID 查询未删除用户 —— 用于 token 校验时确认用户仍存在且未被禁用
+     */
     @Select("select id, username, password_hash, nickname, phone, email, avatar_url, role, status, created_at, updated_at from mall_user where id = #{id} and deleted = 0")
     MallUser findById(Long id);
 

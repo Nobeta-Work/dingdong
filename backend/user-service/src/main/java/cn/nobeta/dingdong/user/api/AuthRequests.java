@@ -17,6 +17,11 @@ public final class AuthRequests {
             @NotBlank @Size(max = 32) String nickname,
             @Pattern(regexp = "^$|^1\\d{10}$", message = "手机号格式不正确") String phone,
             @jakarta.validation.constraints.Email(message = "邮箱格式不正确") String email) { }
+    /**
+     * 用户登录请求 DTO
+     * 前端提交登录表单时发送，仅需 username 和 password 两个必填字段
+     * 由 Spring Bean Validation 在控制器层自动校验非空
+     */
     public record LoginRequest(@NotBlank String username, @NotBlank String password) { }
     public record ProfileRequest(@NotBlank @Size(max = 32) String nickname,
                                  @Pattern(regexp = "^$|^1\\d{10}$", message = "手机号格式不正确") String phone,
