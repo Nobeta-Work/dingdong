@@ -6,6 +6,7 @@
 ## 技术栈
 
 **前端：** *Vue3、TypeScript、Vite、Element-Plus*
+
 **后端：**
 - *Java 21*
 - *Spring Boot v3.5.0*
@@ -19,6 +20,8 @@
 - *MySQL* : 业务数据持久化
 
 ## v0.1 本地基础设施
+
+> 该项目默认使用 Docker 部署提供开发与测试环境
 
 ### 前置条件
 
