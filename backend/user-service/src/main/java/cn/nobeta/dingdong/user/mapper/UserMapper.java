@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.*;
 public interface UserMapper {
     /**
      * 按用户名查询未删除的用户
-     * 注册时用于校验用户名唯一性，以及插入后回查完整数据  hh
+     * 注册时用于校验用户名唯一性，以及插入后回查完整数据 
      */
     @Select("select id, username, password_hash, nickname, phone, email, avatar_url, role, status, created_at, updated_at from mall_user where username = #{username} and deleted = 0")
     MallUser findByUsername(String username);
@@ -17,14 +17,14 @@ public interface UserMapper {
 
     /**
      * 统计未删除用户中指定手机号的数量（> 0 表示已占用）
-     * 注册时用于校验手机号唯一性  hello
+     * 注册时用于校验手机号唯一性
      */
     @Select("select count(1) from mall_user where phone = #{value} and deleted = 0")
     int countByPhone(String value);
 
     /**
      * 统计未删除用户中指定邮箱的数量（> 0 表示已占用）
-     * 注册时用于校验邮箱唯一性  躺赢好开心
+     * 注册时用于校验邮箱唯一性 
      */
     @Select("select count(1) from mall_user where email = #{value} and deleted = 0")
     int countByEmail(String value);
