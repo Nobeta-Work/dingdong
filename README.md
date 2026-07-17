@@ -52,6 +52,20 @@ docker compose ps
 
 启动 Java 服务时，`JWT_SECRET` 必须在 Gateway、用户服务与商品服务保持一致；当前默认值仅适用于本地开发。
 
+### 测试数据
+
+`infra/mysql/init/06-test-data.sql` 会在 **首次创建 MySQL 数据卷** 时自动执行。它会生成 30 个上架商品与 SKU、演示用户和地址、购物车，以及覆盖待支付、已支付、已发货、已完成、已取消状态的订单、库存锁定和支付数据。
+
+演示账户密码均为 `password`：管理员使用 `demo_admin`，买家可使用 `demo_buyer_01` 至 `demo_buyer_07`；`demo_buyer_disabled` 用于验证禁用账户。商品图片统一使用测试商品图，用户及管理端头像使用测试头像。
+
+已有 MySQL 数据卷不会重复执行初始化脚本。需要手动导入时，在项目根目录执行：
+
+```powershell
+Get-Content -Raw infra/mysql/init/06-test-data.sql | docker compose exec -T mysql mysql -udingdong -pdingdong_dev
+```
+
+脚本可重复执行；如需完全重置本地数据，请先删除 Compose 数据卷后再启动中间件。
+
 ### 构建与运行服务
 
 ```powershell
