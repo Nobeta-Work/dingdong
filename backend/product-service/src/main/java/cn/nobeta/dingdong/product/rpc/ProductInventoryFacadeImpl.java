@@ -38,21 +38,22 @@ public class ProductInventoryFacadeImpl implements ProductInventoryFacade {
      */
     @Override @Transactional
     public List<SkuSnapshot> lockInventory(String orderNo, List<LockItem> items) {
+        // 订单没有任何待锁定项时，直接拒绝，避免创建空锁单。
         if (items == null || items.isEmpty()) throw new BusinessException("INVENTORY_EMPTY", "没有需要锁定的商品");
         List<SkuSnapshot> snapshots = new ArrayList<>();
         for (LockItem item : items) {
-            // 校验锁定数量 >= 0
+            // 基础参数校验：SKU 和数量必须同时有效，且数量必须大于 0。
             if (item.skuId() == null || item.quantity() == null || item.quantity() <= 0) throw new BusinessException("INVENTORY_INVALID_QUANTITY", "商品数量不合法");
-            // 1. 校验 SKU 存在且在售：获取数据库中的实时价格信息
+            // 先读取数据库中的 SKU 视图，后续无论锁定成功与否都用它返回服务端权威价格。
             InventorySkuView sku = requireSaleableSku(item.skuId());
-            // 2. 幂等防重：若该订单已锁定过该 SKU，则跳过锁定操作
+            // 幂等防重：同一订单同一 SKU 只允许锁定一次，重复请求直接跳过库存扣减。
             if (productMapper.countActiveLock(orderNo, item.skuId()) == 0) {
-                // 3. 乐观锁扣减库存（校验可用库存 >= 需求量）
+                // 通过乐观锁扣减可用库存，失败说明当前库存不足或状态不满足在售条件。
                 if (productMapper.lockStock(item.skuId(), item.quantity()) == 0) throw new BusinessException("INVENTORY_INSUFFICIENT", "商品库存不足：" + sku.getTitle());
-                // 4. 记录库存锁定流水
+                // 写入锁定流水，后续取消/支付确认都依赖这条订单级别的锁定记录。
                 productMapper.insertInventoryLock(orderNo, item.skuId(), item.quantity());
             }
-            // 5. 构建快照（含数据库中最新价格），返回给订单服务
+            // 无论是否命中幂等分支，都返回同一份快照给订单服务用于金额计算。
             snapshots.add(snapshot(sku, item.quantity()));
         }
         return snapshots;
@@ -65,8 +66,12 @@ public class ProductInventoryFacadeImpl implements ProductInventoryFacade {
      */
     @Override @Transactional
     public void unlockInventory(String orderNo) {
+        // 先读取仍处于 LOCKED 状态的库存明细，再逐条回滚可用库存。
         List<InventoryLockRecord> locks = productMapper.findActiveLocks(orderNo);
-        for (InventoryLockRecord lock : locks) productMapper.unlockStock(lock.getSkuId(), lock.getQuantity());
+        for (InventoryLockRecord lock : locks) {
+            productMapper.unlockStock(lock.getSkuId(), lock.getQuantity());
+        }
+        // 库存回滚完成后，再把锁定流水统一标记为已释放，避免重复释放。
         productMapper.releaseLocks(orderNo);
     }
 
@@ -77,12 +82,15 @@ public class ProductInventoryFacadeImpl implements ProductInventoryFacade {
      */
     @Override @Transactional
     public void confirmInventory(String orderNo) {
+        // 只确认仍处于 LOCKED 状态的库存记录，避免对已处理的订单重复核销。
         List<InventoryLockRecord> locks = productMapper.findActiveLocks(orderNo);
         for (InventoryLockRecord lock : locks) {
+            // 将锁定库存转为销量；任意一条失败都说明数据状态异常，需要回滚。
             if (productMapper.confirmStock(lock.getSkuId(), lock.getQuantity()) == 0) {
                 throw new BusinessException("INVENTORY_CONFIRM_FAILED", "库存锁定记录异常");
             }
         }
+        // 库存核销成功后，再统一把流水状态改为 CONFIRMED。
         productMapper.confirmLocks(orderNo);
     }
 
@@ -110,6 +118,7 @@ public class ProductInventoryFacadeImpl implements ProductInventoryFacade {
      * @throws BusinessException 当 SKU 不存在或已下架时抛出
      */
     private InventorySkuView requireSaleableSku(Long skuId) {
+        // 商品快照必须从数据库读取，确保价格、库存、上下架状态都是实时值。
         InventorySkuView sku = productMapper.findInventorySku(skuId);
         if (sku == null || !Integer.valueOf(1).equals(sku.getStatus())) throw new BusinessException("PRODUCT_SKU_NOT_FOUND", "SKU 不存在或已下架");
         return sku;
@@ -123,5 +132,8 @@ public class ProductInventoryFacadeImpl implements ProductInventoryFacade {
      * @param quantity 已锁定数量（用于计算剩余可用库存）
      * @return SKU 快照（含价格）
      */
-    private SkuSnapshot snapshot(InventorySkuView sku, Integer quantity) { return new SkuSnapshot(sku.getSkuId(), sku.getSkuCode(), sku.getTitle(), sku.getMainImageUrl(), sku.getSpecJson(), sku.getPrice(), sku.getAvailableStock() - quantity); }
+    private SkuSnapshot snapshot(InventorySkuView sku, Integer quantity) {
+        // 返回给订单服务的快照只用于展示和金额计算，库存值按当前可用库存减去本次锁定数量计算。
+        return new SkuSnapshot(sku.getSkuId(), sku.getSkuCode(), sku.getTitle(), sku.getMainImageUrl(), sku.getSpecJson(), sku.getPrice(), sku.getAvailableStock() - quantity);
+    }
 }
