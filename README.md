@@ -1,6 +1,10 @@
 
 ## 叮咚商城
 
+<p align="center">
+  <img src="frontend/public/DingDongLogo.png" width="120" alt="叮咚商城图标" />
+</p>
+
 叮咚商城是一个基于 Spring Cloud Alibaba (2025.0.0.0) 开发的前后端分离电商项目。
 
 ## 技术栈
