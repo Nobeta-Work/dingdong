@@ -18,6 +18,11 @@ public final class UserResponses {
             return new UserProfile(user.getId(), user.getUsername(), user.getNickname(), user.getPhone(), user.getEmail(), user.getAvatarUrl(), user.getRole());
         }
     }
+    /**
+     * 登录响应 DTO
+     * 包含 JWT token（前端存入 localStorage）、过期秒数（前端可据此做 token 刷新提示）、
+     * 以及脱敏后的用户信息（不含 passwordHash 等敏感字段）
+     */
     public record LoginResponse(String token, long expiresIn, UserProfile user) { }
     public record AddressResponse(Long id, String receiverName, String receiverPhone, String province, String city, String district, String detailAddress, boolean defaultAddress) {
         public static AddressResponse from(UserAddress address) {

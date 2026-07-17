@@ -3,8 +3,10 @@ package cn.nobeta.dingdong.user.domain;
 import java.time.LocalDateTime;
 
 /**
- * 商城用户领域实体，映射 mall_user 表
- * 注册时至少需要 username、passwordHash、nickname，phone 和 email 为可选但全局唯一
+ * 商城用户领域实体，映射 mall_user 表 —— 登录链路中的核心数据载体
+ * 登录时通过 username 查库获得此实体，其中 passwordHash 用于 BCrypt 密码比对，
+ * id / username / role 用于构造 JWT Payload，status 用于账号禁用校验。
+ * 注册时至少需要 username、passwordHash、nickname，phone 和 email 为可选但全局唯一。
  */
 public class MallUser {
     private Long id;
