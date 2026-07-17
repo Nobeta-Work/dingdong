@@ -7,10 +7,10 @@ tags:
   - project/ding-dong
   - document/prd
   - backend/microservices
-status: aligned
-version: 0.4.0
+status: implementation-in-progress
+version: 0.5.0
 created: 2026-07-14
-updated: 2026-07-15
+updated: 2026-07-17
 due: 2026-07-23
 owner: Nobeta
 related:
@@ -28,8 +28,8 @@ related:
 | 项目 | 内容 |
 |---|---|
 | 产品名称 | 叮咚商城（Ding Dong Mall） |
-| 当前版本 | v0.4.0 |
-| 文档状态 | 范围已对齐，进入开发 |
+| 当前版本 | v0.5.0 |
+| 文档状态 | 后端主链路已实现，进入前端联调与交付编排 |
 | 实训截止日期 | ==2026-07-23（下周四）== |
 | 目标用户 | 普通买家、商城管理员 |
 | 项目类型 | 实训交付、个人简历项目 |
@@ -523,8 +523,9 @@ flowchart TB
 
 ### 10.3 配置管理
 
-- `application.yml` 只保留应用名、Nacos 地址等启动所需最小配置。
-- 公共配置与环境差异配置存放于 Nacos。
+- Nacos 当前承担服务注册与发现；Gateway 以配置类维护路由规则，并使用 `lb://服务名` 由 Nacos 解析健康实例。
+- Gateway 与下游服务默认启用服务发现；本地离线调试时可显式设置 `NACOS_ENABLED=false` 覆盖。
+- 业务服务保留 Nacos 配置扩展能力；路由规则不依赖外部 Nacos 模板发布。
 - 数据库密码、JWT 密钥等敏感信息通过环境变量或私有配置注入，不提交 Git。
 - 环境至少区分 `dev`、`test`，生产演示环境后续按需要增加。
 
@@ -750,3 +751,4 @@ flowchart TB
 | v0.2.0 | 2026-07-15 | 重构项目范围、核心流程、服务边界、分布式设计、验收标准与版本基线 |
 | v0.3.0 | 2026-07-15 | 确认 07-23 截止日期、Docker Compose 交付、模拟支付、秒杀方向与双阶段排期 |
 | v0.4.0 | 2026-07-15 | 取消固定角色设定，统一改为普通开发迭代、验收与变更规范 |
+| v0.5.0 | 2026-07-17 | 记录后端 v0.5 主链路完成状态，明确 Gateway 基于 Nacos 服务发现的本地配置类路由，以及 v0.9 剩余交付项 |
