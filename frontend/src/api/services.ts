@@ -10,6 +10,7 @@ export type CartItem = { id: number; skuId: number; quantity: number; selected: 
 export type Address = { id: number; receiverName: string; receiverPhone: string; province: string; city: string; district: string; detailAddress: string; defaultAddress: boolean }
 export type OrderItem = { skuId: number; productTitle: string; mainImageUrl?: string; specJson: string; unitPrice: number; quantity: number; totalAmount: number }
 export type Order = { orderNo: string; status: string; totalAmount: number; createdAt?: string; items: OrderItem[]; receiverName?: string; receiverPhone?: string; receiverAddress?: string }
+/** 用户资料数据模型 —— 用于用户资料查询与修改的前后端数据契约 */
 export type User = { id: number; username: string; nickname?: string; phone?: string; email?: string; avatarUrl?: string; role?: 'USER' | 'ADMIN' }
 
 const data = <T>(promise: Promise<{ data: { data: T } }>) => promise.then((response) => response.data.data)
@@ -17,7 +18,9 @@ const data = <T>(promise: Promise<{ data: { data: T } }>) => promise.then((respo
 export const authApi = {
   login: (payload: { username: string; password: string }) => data<{ token: string; expiresIn: number; user: User }>(http.post('/auth/login', payload)),
   register: (payload: { username: string; password: string; nickname?: string; phone?: string; email?: string }) => data<User>(http.post('/auth/register', payload)),
+  /** 查询当前登录用户的个人资料 → GET /api/users/me */
   me: () => data<User>(http.get('/users/me')),
+  /** 修改当前登录用户的个人资料 → PUT /api/users/me，payload 为要修改的字段（昵称必填，其余可选） */
   updateMe: (payload: Partial<User>) => data<User>(http.put('/users/me', payload)),
 }
 

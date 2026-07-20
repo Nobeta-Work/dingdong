@@ -1,15 +1,18 @@
 USE dingdong_user;
 
+-- 商城用户表 —— 用户资料查询与修改功能的数据存储
+-- 用户注册/登录时创建记录，profile() 通过 id 查询，updateProfile() 更新 nickname/phone/email/avatar_url
+-- phone 和 email 设有唯一索引，修改资料时需校验全局唯一性；deleted 字段实现逻辑删除
 CREATE TABLE IF NOT EXISTS mall_user (
     id BIGINT NOT NULL AUTO_INCREMENT,
     username VARCHAR(32) NOT NULL,
     password_hash VARCHAR(100) NOT NULL,
-    nickname VARCHAR(32) NOT NULL,
-    phone VARCHAR(16) NULL,
-    email VARCHAR(128) NULL,
-    avatar_url VARCHAR(512) NULL,
-    role VARCHAR(16) NOT NULL DEFAULT 'USER',
-    status TINYINT NOT NULL DEFAULT 1,
+    nickname VARCHAR(32) NOT NULL,            -- 用户昵称（资料修改可更新）
+    phone VARCHAR(16) NULL,                   -- 手机号，全局唯一（资料修改可更新）
+    email VARCHAR(128) NULL,                  -- 邮箱，全局唯一（资料修改可更新）
+    avatar_url VARCHAR(512) NULL,             -- 头像 URL（资料修改可更新）
+    role VARCHAR(16) NOT NULL DEFAULT 'USER', -- 用户角色（USER/ADMIN，资料查询返回但不可修改）
+    status TINYINT NOT NULL DEFAULT 1,        -- 账号状态：1-正常 0-禁用（资料查询时校验）
     deleted TINYINT NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

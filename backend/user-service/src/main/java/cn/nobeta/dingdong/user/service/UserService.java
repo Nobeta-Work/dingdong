@@ -11,9 +11,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 用户服务 —— 登录链路的业务逻辑核心
+ * 用户服务 —— 用户注册、登录认证、个人资料查询与修改的业务逻辑核心
  * 负责用户注册、登录认证、个人信息管理。
  * 登录方法 login() 完成：用户名查询 → BCrypt 密码比对 → 账号状态校验 → JWT 签发
+ * 资料查询 profile() 完成：按用户 ID 查库 → 账号状态校验
+ * 资料修改 updateProfile() 完成：加载当前用户 → 手机号/邮箱唯一性校验 → 字段更新 → 持久化 → 回查
  */
 @Service
 public class UserService {
@@ -82,24 +84,55 @@ public class UserService {
         return new LoginResult(token, tokenService.getExpiresInSeconds(), user);
     }
 
+    /**
+     * 用户资料查询 —— 根据用户 ID 查询个人资料
+     * ① 通过 userMapper.findById() 按主键查库（查询条件含 deleted=0，逻辑删除用户不可查）
+     * ② 校验账号状态：status=1（正常）方可返回，否则抛出 AUTH_UNAUTHORIZED 异常
+     *
+     * @param userId 当前登录用户 ID（由 Controller 层从 CurrentUserContext 获取传入）
+     * @return 完整的 MallUser 领域实体（由 Controller 层通过 UserProfile.from() 脱敏后返回前端）
+     * @throws BusinessException 用户不存在或已被禁用
+     */
     public MallUser profile(Long userId) {
+        // ① 按主键查询未删除的用户
         MallUser user = userMapper.findById(userId);
+        // ② 用户不存在或状态非正常（status != 1）→ 登录状态无效
         if (user == null || !Integer.valueOf(1).equals(user.getStatus())) throw new BusinessException("AUTH_UNAUTHORIZED", "登录状态无效");
         return user;
     }
 
+    /**
+     * 用户资料修改 —— 更新当前用户的昵称、手机号、邮箱、头像 URL
+     * ① 先调用 profile() 加载当前用户的完整信息（同时校验用户存在且状态正常）
+     * ② 校验手机号/邮箱唯一性：仅在值发生变化时才查库，若已被其他用户占用则抛出对应业务异常
+     * ③ 将请求中的新值设置到用户实体上（空白字符串统一转为 null）
+     * ④ 调用 userMapper.updateProfile() 持久化到数据库
+     * ⑤ 回查数据库返回更新后的完整用户信息（保证返回的是最新落库数据）
+     *
+     * @param userId  当前登录用户 ID
+     * @param request 用户资料修改请求（昵称必填，手机号/邮箱/头像URL可选）
+     * @return 更新后的完整 MallUser 实体
+     * @throws BusinessException 用户不存在/被禁用/手机号已存在/邮箱已存在
+     */
     @Transactional
     public MallUser updateProfile(Long userId, AuthRequests.ProfileRequest request) {
+        // ① 加载当前用户信息并校验状态
         MallUser current = profile(userId);
+        // ② 处理可选字段：空白字符串统一转为 null（避免空字符串违反唯一索引约束）
         String phone = blankToNull(request.phone());
         String email = blankToNull(request.email());
+        // ③ 手机号唯一性校验：仅当手机号有值且与当前值不同时才查库
         if (phone != null && !phone.equals(current.getPhone()) && userMapper.countByPhone(phone) > 0) throw new BusinessException("USER_PHONE_EXISTS", "手机号已被使用");
+        // ④ 邮箱唯一性校验：仅当邮箱有值且与当前值不同时才查库
         if (email != null && !email.equals(current.getEmail()) && userMapper.countByEmail(email) > 0) throw new BusinessException("USER_EMAIL_EXISTS", "邮箱已被使用");
+        // ⑤ 将请求中的新值设置到当前用户实体
         current.setNickname(request.nickname());
         current.setPhone(phone);
         current.setEmail(email);
         current.setAvatarUrl(blankToNull(request.avatarUrl()));
+        // ⑥ 执行更新 SQL 持久化到数据库
         userMapper.updateProfile(current);
+        // ⑦ 回查数据库，返回更新后的完整用户信息
         return profile(userId);
     }
 

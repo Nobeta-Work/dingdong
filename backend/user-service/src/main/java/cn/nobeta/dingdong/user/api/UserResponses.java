@@ -6,13 +6,15 @@ import cn.nobeta.dingdong.user.domain.UserAddress;
 public final class UserResponses {
     private UserResponses() { }
     /**
-     * 用户信息响应 DTO
+     * 用户信息响应 DTO —— 用户资料查询与修改链路的返回对象
      * 从 MallUser 领域实体转换而来，已去除 passwordHash 等敏感字段
+     * 用于 GET/PUT /api/users/me 接口的响应数据
      */
     public record UserProfile(Long id, String username, String nickname, String phone, String email, String avatarUrl, String role) {
         /**
          * 由 MallUser 领域实体构建脱敏的 UserProfile 响应对象
          * 注册成功后通过此方法将用户数据返回，确保密码哈希不泄露到响应中
+         * 用户资料查询和修改完成后也通过此方法对返回数据做脱敏处理
          */
         public static UserProfile from(MallUser user) {
             return new UserProfile(user.getId(), user.getUsername(), user.getNickname(), user.getPhone(), user.getEmail(), user.getAvatarUrl(), user.getRole());
