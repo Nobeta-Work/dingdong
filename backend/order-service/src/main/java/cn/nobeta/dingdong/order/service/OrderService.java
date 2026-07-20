@@ -62,7 +62,7 @@ public class OrderService {
     public MallOrder create(Long userId, CreateOrderRequest request) {
         // 1. 从购物车获取待结算商品
         List<CartItem> carts = cartService.itemsForOrder(userId, request.cartItemIds());
-        // 2. 获取地址快照（避免后续地址修改影响历史订单）
+        // 2. 获取地址快照：这里直接拿下单时刻的收货信息，避免后续用户修改地址影响历史订单展示
         var address = addressFacade.getAddressSnapshot(userId, request.addressId());
         // 3. 生成订单号（格式：DD + yyyyMMddHHmmssSSS + 3位随机数）
         String orderNo = nextOrderNo();
@@ -88,6 +88,7 @@ public class OrderService {
             // 6. 构建订单主表实体
             MallOrder order = new MallOrder();
             order.setOrderNo(orderNo); order.setUserId(userId);
+            // 订单收件人信息直接来源于地址快照，保证订单落库时保存的是历史状态
             order.setReceiverName(address.receiverName());
             order.setReceiverPhone(address.receiverPhone());
             order.setReceiverAddress(String.join(" ", address.province(), address.city(), address.district(), address.detailAddress()));
