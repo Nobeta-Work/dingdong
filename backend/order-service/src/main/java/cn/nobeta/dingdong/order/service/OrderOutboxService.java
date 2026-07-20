@@ -10,13 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 订单 Outbox 事件服务
- * <p>实现可靠消息投递模式（Outbox Pattern）：将待发布的事件先持久化到数据库，
- * 再通过定时任务轮询发送，确保订单超时关闭事件不丢失。</p>
- * <ul>
- * <li>{@link #createTimeout} — 事务内创建待发送事件</li>
- * <li>{@link #publish} — 独立事务发布事件到 RocketMQ</li>
- * <li>{@link #retryPending} — 定时重试失败事件</li>
- * </ul>
+ * 实现可靠消息投递模式（Outbox Pattern）：将待发布的事件先持久化到数据库，
+ * 再通过定时任务轮询发送，确保订单超时关闭事件不丢失。
+ * 职责包括：{@link #createTimeout} 事务内创建待发送事件，{@link #publish} 独立事务发布事件到 RocketMQ，
+ * {@link #retryPending} 定时重试失败事件。
  */
 @Service public class OrderOutboxService {
     private final OrderOutboxMapper mapper;
@@ -29,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
     /**
      * 创建订单超时事件记录（状态：PENDING）
-     * <p>该方法通常在创建订单的同一事务中调用，确保订单与事件记录原子性写入。</p>
+        * 该方法通常在创建订单的同一事务中调用，确保订单与事件记录原子性写入。
      * @param orderNo 订单号
      * @return 新创建的 Outbox 事件记录
      */
@@ -44,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 
     /**
      * 发布 Outbox 事件到 RocketMQ（独立事务）
-     * <p>使用 {@link Propagation#REQUIRES_NEW} 确保即使主事务回滚，已发送的事件仍可追踪重试。</p>
+        * 使用 {@link Propagation#REQUIRES_NEW} 确保即使主事务回滚，已发送的事件仍可追踪重试。
      * @param id Outbox 记录 ID
      */
     @Transactional(propagation=Propagation.REQUIRES_NEW)
@@ -65,7 +62,7 @@ import org.springframework.transaction.annotation.Transactional;
 
     /**
      * 定时重试待发送事件（每 60 秒执行一次）
-     * <p>通过 {@link Scheduled} 注解配置，默认延迟 60 秒，可通过 {@code app.outbox.retry-delay-ms} 覆盖。</p>
+        * 通过 {@link Scheduled} 注解配置，默认延迟 60 秒，可通过 {@code app.outbox.retry-delay-ms} 覆盖。
      */
     @Scheduled(fixedDelayString="${app.outbox.retry-delay-ms:60000}")
     public void retryPending(){

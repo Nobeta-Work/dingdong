@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 
 /**
  * 订单主表实体
- * <p>对应 mall_order 表，记录每笔订单的核心信息。
- * 订单状态流转：PENDING_PAYMENT → PAID → SHIPPED → COMPLETED / CANCELED。</p>
+ * 对应 mall_order 表，记录每笔订单的核心信息。
+ * 订单状态流转：PENDING_PAYMENT → PAID → SHIPPED → COMPLETED / CANCELED。
  */
 public class MallOrder {
     /** 主键 ID */

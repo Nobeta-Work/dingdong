@@ -4,9 +4,9 @@ import java.math.BigDecimal;
 
 /**
  * 库存业务视图
- * <p>联表查询 product_sku + product_spu 的聚合视图，用于库存锁定/解锁/确认操作。
+ * 联表查询 product_sku + product_spu 的聚合视图，用于库存锁定/解锁/确认操作。
  * 价格字段 {@link #price} 来自数据库 {@code product_sku.price}，
- * 是价格校验链路中返回给订单服务的权威价格来源。</p>
+ * 是价格校验链路中返回给订单服务的权威价格来源。
  */
 public class InventorySkuView {
     /** SKU ID */

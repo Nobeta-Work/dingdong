@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * 支付成功事件消费者
- * <p>监听 RocketMQ 支付成功 Topic，收到事件后调用 {@link OrderService#markPaid}
- * 将订单状态从 PENDING_PAYMENT 流转为 PAID，并触发库存确认扣减。</p>
+ * 监听 RocketMQ 支付成功 Topic，收到事件后调用 {@link OrderService#markPaid}
+ * 将订单状态从 PENDING_PAYMENT 流转为 PAID，并触发库存确认扣减。
  */
 @Component
 @RocketMQMessageListener(

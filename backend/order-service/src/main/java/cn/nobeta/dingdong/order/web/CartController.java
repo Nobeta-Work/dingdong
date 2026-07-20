@@ -13,8 +13,8 @@ import java.util.*;
 
 /**
  * 购物车用户端 REST 控制器
- * <p>提供购物车列表查询、添加商品、更新数量、删除商品等接口。
- * 控制器从安全上下文获取用户 ID，并通过 Dubbo 获取商品快照信息。</p>
+ * 提供购物车列表查询、添加商品、更新数量、删除商品等接口。
+ * 控制器从安全上下文获取用户 ID，并通过 Dubbo 获取商品快照信息。
  */
 @RestController @RequestMapping("/api/cart/items")
 public class CartController {
@@ -25,7 +25,7 @@ public class CartController {
 
     /**
      * 查询当前用户购物车列表
-     * <p>查询购物车项后通过 Dubbo 批量获取商品快照，组装为带商品信息的响应。</p>
+        * 查询购物车项后通过 Dubbo 批量获取商品快照，组装为带商品信息的响应。
      */
     @GetMapping
     public ApiResponse<List<CartItemResponse>> list(){

@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * 订单数据访问层（MyBatis Mapper）
- * <p>提供订单主表、订单项、状态日志的 CRUD 操作。</p>
+ * 提供订单主表、订单项、状态日志的 CRUD 操作。
  */
 @Mapper
 public interface OrderMapper {
@@ -29,6 +29,7 @@ public interface OrderMapper {
 
     /**
      * 查询用户拥有的指定订单号订单
+        * 该查询用于订单详情链路，必须同时满足订单号匹配和用户归属校验，避免越权读取。
      * @param orderNo 订单号
      * @param userId 用户 ID（权限校验）
      * @return 订单实体，不存在返回 null
@@ -64,6 +65,7 @@ public interface OrderMapper {
 
     /**
      * 查询订单的所有订单项
+        * 订单详情页会根据主订单 ID 补充商品明细，这里返回按 ID 排序的订单项集合。
      * @param orderId 订单 ID
      * @return 订单项列表
      */

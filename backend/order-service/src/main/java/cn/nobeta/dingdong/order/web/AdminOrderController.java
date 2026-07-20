@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 订单管理员控制器
- * <p>提供管理员专用的订单发货接口，需 ADMIN 角色权限。</p>
+ * 提供管理员专用的订单发货接口，需 ADMIN 角色权限。
  */
 @RestController @RequestMapping("/api/admin/orders")
 public class AdminOrderController {
@@ -22,7 +22,7 @@ public class AdminOrderController {
 
     /**
      * 订单发货
-     * <p>仅管理员可调用，将已支付订单状态从 PAID 流转为 SHIPPED。</p>
+        * 仅管理员可调用，将已支付订单状态从 PAID 流转为 SHIPPED。
      * @param orderNo 订单号
      * @param request 发货请求（快递公司、单号）
      * @return 更新后的订单详情

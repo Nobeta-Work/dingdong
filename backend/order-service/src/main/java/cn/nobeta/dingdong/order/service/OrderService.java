@@ -128,17 +128,29 @@ public class OrderService {
         }
     }
 
-    /** 查询当前用户指定订单号订单，不存在时抛出业务异常 */
+    /**
+     * 查询当前用户指定订单号的订单主记录。
+     * 先按订单号和用户 ID 做归属校验，再将空结果转换为业务异常，避免控制层重复处理空值。
+     * @param userId 当前用户 ID
+     * @param orderNo 订单号
+     * @return 订单主记录
+     * @throws BusinessException 订单不存在时抛出
+     */
     public MallOrder get(Long userId, String orderNo) {
         MallOrder order = orderMapper.findOwned(orderNo, userId);
         if (order == null) throw new BusinessException("ORDER_NOT_FOUND", "订单不存在");
         return order;
     }
 
-    /** 查询指定订单的所有订单项 */
+    /**
+     * 查询指定订单的所有订单项。
+     * 订单详情页需要同时展示主单信息和商品明细，因此这里单独提供订单项列表查询。
+     * @param orderId 订单 ID
+     * @return 订单项列表
+     */
     public List<OrderItem> items(Long orderId) { return orderMapper.findItems(orderId); }
 
-    /** 分页查询当前用户订单 */
+    /** 分页查询当前用户订单。 */
     public List<MallOrder> page(Long userId, int page, int size) {
         return orderMapper.findPage(userId, size, (page - 1) * size);
     }
@@ -201,7 +213,13 @@ public class OrderService {
         return requireOrder(orderNo);
     }
 
-    /** 内部工具方法：根据订单号查询订单，不存在时抛业务异常 */
+    /**
+     * 内部工具方法：根据订单号查询订单，不存在时抛业务异常。
+     * 该方法用于支付、发货、确认收货等需要直接获取订单主记录的业务场景。
+     * @param orderNo 订单号
+     * @return 订单主记录
+     * @throws BusinessException 订单不存在时抛出
+     */
     public MallOrder requireOrder(String orderNo) {
         MallOrder order = orderMapper.findByOrderNo(orderNo);
         if (order == null) throw new BusinessException("ORDER_NOT_FOUND", "订单不存在");
