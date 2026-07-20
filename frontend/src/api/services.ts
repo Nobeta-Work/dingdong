@@ -7,6 +7,7 @@ export type ProductListItem = { id: number; title: string; subtitle?: string; ma
 export type Sku = { id: number; skuCode: string; specJson: string; price: number; availableStock: number; status: number }
 export type ProductDetail = ProductListItem & { description?: string; skus: Sku[] }
 export type CartItem = { id: number; skuId: number; quantity: number; selected: boolean; productTitle: string; mainImageUrl?: string; specJson?: string; unitPrice: number; availableStock?: number; valid?: boolean }
+/** 收货地址数据模型 —— 用于收货地址增删改查的前后端数据契约 */
 export type Address = { id: number; receiverName: string; receiverPhone: string; province: string; city: string; district: string; detailAddress: string; defaultAddress: boolean }
 export type OrderItem = { skuId: number; productTitle: string; mainImageUrl?: string; specJson: string; unitPrice: number; quantity: number; totalAmount: number }
 export type Order = { orderNo: string; status: string; totalAmount: number; createdAt?: string; items: OrderItem[]; receiverName?: string; receiverPhone?: string; receiverAddress?: string }
@@ -38,10 +39,15 @@ export const cartApi = {
   remove: (id: number) => data<void>(http.delete(`/cart/items/${id}`)),
 }
 
+/** 收货地址 API —— 地址增删改查的前端调用封装 */
 export const addressApi = {
+  /** 查询收货地址列表 → GET /api/addresses */
   list: () => data<Address[]>(http.get('/addresses')),
+  /** 新增收货地址 → POST /api/addresses */
   create: (payload: Omit<Address, 'id'>) => data<Address>(http.post('/addresses', payload)),
+  /** 修改收货地址 → PUT /api/addresses/{id} */
   update: (id: number, payload: Omit<Address, 'id'>) => data<Address>(http.put(`/addresses/${id}`, payload)),
+  /** 删除收货地址 → DELETE /api/addresses/{id} */
   remove: (id: number) => data<void>(http.delete(`/addresses/${id}`)),
 }
 

@@ -26,7 +26,16 @@ public final class UserResponses {
      * 以及脱敏后的用户信息（不含 passwordHash 等敏感字段）
      */
     public record LoginResponse(String token, long expiresIn, UserProfile user) { }
+    /**
+     * 收货地址响应 DTO —— 收货地址查询链路的返回对象
+     * 从 UserAddress 领域实体转换而来，defaultAddress 使用 boolean 类型
+     * 用于 GET/POST/PUT /api/addresses 接口的响应数据
+     */
     public record AddressResponse(Long id, String receiverName, String receiverPhone, String province, String city, String district, String detailAddress, boolean defaultAddress) {
+        /**
+         * 由 UserAddress 领域实体构建 AddressResponse 响应对象
+         * defaultAddress 字段通过 Boolean.TRUE.equals() 安全解包，避免 NPE
+         */
         public static AddressResponse from(UserAddress address) {
             return new AddressResponse(address.getId(), address.getReceiverName(), address.getReceiverPhone(), address.getProvince(), address.getCity(), address.getDistrict(), address.getDetailAddress(), Boolean.TRUE.equals(address.getDefaultAddress()));
         }
