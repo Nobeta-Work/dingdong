@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 /**
  * 订单支付 Dubbo 服务实现
- * <p>向支付服务（pay-service）提供订单查询和状态更新能力，使支付服务无需直接访问订单数据库。</p>
+ * 向支付服务（pay-service）提供订单查询和状态更新能力，使支付服务无需直接访问订单数据库。
  */
 @Service
 @DubboService
@@ -23,7 +23,7 @@ public class OrderPaymentFacadeImpl implements OrderPaymentFacade {
 
     /**
      * 获取可支付订单信息
-     * <p>支付服务创建支付单前调用，校验订单状态是否为 PENDING_PAYMENT。</p>
+        * 支付服务创建支付单前调用，校验订单状态是否为 PENDING_PAYMENT。
      * @param orderNo 订单号
      * @param userId 用户 ID
      * @return 可支付订单信息
@@ -39,7 +39,7 @@ public class OrderPaymentFacadeImpl implements OrderPaymentFacade {
 
     /**
      * 标记订单已支付
-     * <p>支付成功后支付服务调用此方法通知订单服务更新状态。</p>
+        * 支付成功后支付服务调用此方法通知订单服务更新状态。
      * @param orderNo 订单号
      * @param paymentNo 支付单号
      * @param paidAt 支付成功时间

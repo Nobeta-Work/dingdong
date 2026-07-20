@@ -5,7 +5,7 @@ import java.math.BigDecimal;import java.time.LocalDateTime;import java.util.List
 
 /**
  * 订单模块的响应 DTO 集合
- * <p>提供 from 静态工厂方法，将领域对象转换为前端友好的扁平结构。</p>
+ * 提供 from 静态工厂方法，将领域对象转换为前端友好的扁平结构。
  */
 public final class OrderResponses { private OrderResponses(){}
 

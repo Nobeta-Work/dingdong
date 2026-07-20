@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * 订单超时事件消费者
- * <p>监听 RocketMQ 订单超时 Topic，收到事件后调用 {@link OrderService#closeUnpaidOrder}
- * 执行未支付订单的自动关闭逻辑。</p>
+ * 监听 RocketMQ 订单超时 Topic，收到事件后调用 {@link OrderService#closeUnpaidOrder}
+ * 执行未支付订单的自动关闭逻辑。
  */
 @Component
 @RocketMQMessageListener(

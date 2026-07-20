@@ -3,9 +3,9 @@ import java.math.BigDecimal;
 
 /**
  * 商品 SKU 实体
- * <p>对应 product_sku 表，记录每个规格的售价、库存等信息。
+ * 对应 product_sku 表，记录每个规格的售价、库存等信息。
  * 价格字段 {@link #price} 是价格校验链路的数据源头，通过 {@link cn.nobeta.dingdong.product.service.CatalogService#saveSku}
- * 写入，经由 {@link cn.nobeta.dingdong.common.rpc.ProductInventoryFacade.SkuSnapshot} 传递给订单服务。</p>
+ * 写入，经由 {@link cn.nobeta.dingdong.common.rpc.ProductInventoryFacade.SkuSnapshot} 传递给订单服务。
  */
 public class ProductSku {
     /** 主键 ID */

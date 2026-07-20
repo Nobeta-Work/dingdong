@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * Outbox 事件数据访问层（MyBatis Mapper）
- * <p>管理 order_outbox 表的读写操作，支持事件的持久化、发送标记和重试更新。</p>
+ * 管理 order_outbox 表的读写操作，支持事件的持久化、发送标记和重试更新。
  */
 @Mapper public interface OrderOutboxMapper {
 

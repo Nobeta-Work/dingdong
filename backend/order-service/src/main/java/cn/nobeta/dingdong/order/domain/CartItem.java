@@ -3,8 +3,8 @@ import java.time.LocalDateTime;
 
 /**
  * 购物车项实体
- * <p>对应 cart_item 表，记录用户加入购物车的商品。
- * 支持选中/未选中状态，方便用户批量结算。</p>
+ * 对应 cart_item 表，记录用户加入购物车的商品。
+ * 支持选中/未选中状态，方便用户批量结算。
  */
 public class CartItem {
     /** 主键 ID */

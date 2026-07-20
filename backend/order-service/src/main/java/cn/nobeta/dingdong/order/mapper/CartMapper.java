@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * 购物车数据访问层（MyBatis Mapper）
- * <p>提供购物车项的增删改查操作，支持批量删除（软删除）机制。</p>
+ * 提供购物车项的增删改查操作，支持批量删除（软删除）机制。
  */
 @Mapper
 public interface CartMapper {
