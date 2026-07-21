@@ -45,4 +45,6 @@ public class CatalogService {
     private Category requireCategory(Long id){Category v=categoryMapper.findById(id);if(v==null)throw new BusinessException("PRODUCT_CATEGORY_NOT_FOUND","商品分类不存在");return v;}
     private Brand requireBrand(Long id){Brand v=brandMapper.findById(id);if(v==null)throw new BusinessException("PRODUCT_BRAND_NOT_FOUND","商品品牌不存在");return v;}
     public List<ProductSku> skus(Long spuId,boolean saleable){return saleable?productMapper.findSaleableSkusBySpuId(spuId):productMapper.findSkusBySpuId(spuId);}
+    public List<ProductSpu> adminProducts(AdminProductQuery query){return productMapper.searchAdmin(query);}
+    public long countAdminProducts(AdminProductQuery query){return productMapper.countAdmin(query);}
 }

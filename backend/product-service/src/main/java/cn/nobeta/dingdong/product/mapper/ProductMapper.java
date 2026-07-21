@@ -181,12 +181,14 @@ public interface ProductMapper {
      * @return 分页商品SPU列表
      */
     @Select("""
-      <script>select distinct s.id,s.title,s.subtitle,s.description,s.main_image_url,s.category_id,s.brand_id,s.status,s.created_at
-      from product_spu s join product_sku k on k.spu_id=s.id and k.deleted=0 and k.status=1
-      where s.deleted=0 and s.status=1
+      <script>select s.id,s.title,s.subtitle,s.description,s.main_image_url,s.category_id,s.brand_id,s.status,s.created_at,
+      (select min(k.price) from product_sku k where k.spu_id=s.id and k.deleted=0 and k.status=1) as min_price,
+      (select coalesce(sum(k.sales),0) from product_sku k where k.spu_id=s.id and k.deleted=0 and k.status=1) as sales
+      from product_spu s where s.deleted=0 and s.status=1
+      and exists (select 1 from product_sku k where k.spu_id=s.id and k.deleted=0 and k.status=1
+      <if test='minPrice != null'>and k.price &gt;= #{minPrice}</if><if test='maxPrice != null'>and k.price &lt;= #{maxPrice}</if>)
       <if test='keyword != null and !keyword.isBlank()'>and (s.title like concat('%',#{keyword},'%') or s.subtitle like concat('%',#{keyword},'%'))</if>
       <if test='categoryId != null'>and s.category_id=#{categoryId}</if><if test='brandId != null'>and s.brand_id=#{brandId}</if>
-      <if test='minPrice != null'>and k.price &gt;= #{minPrice}</if><if test='maxPrice != null'>and k.price &lt;= #{maxPrice}</if>
       order by ${sort} limit #{size} offset #{offset}</script>
       """)
     List<ProductSpu> search(ProductQuery query);
@@ -205,4 +207,24 @@ public interface ProductMapper {
       <if test='minPrice != null'>and k.price &gt;= #{minPrice}</if><if test='maxPrice != null'>and k.price &lt;= #{maxPrice}</if></script>
       """)
     long countSearch(ProductQuery query);
+
+    @Select("""
+      <script>select s.id,s.title,s.subtitle,s.description,s.main_image_url,s.category_id,s.brand_id,s.status,s.created_at,
+      (select min(k.price) from product_sku k where k.spu_id=s.id and k.deleted=0) as min_price,
+      (select coalesce(sum(k.sales),0) from product_sku k where k.spu_id=s.id and k.deleted=0) as sales
+      from product_spu s where s.deleted=0
+      <if test='keyword != null and !keyword.isBlank()'>and (s.title like concat('%',#{keyword},'%') or s.subtitle like concat('%',#{keyword},'%'))</if>
+      <if test='categoryId != null'>and s.category_id=#{categoryId}</if><if test='brandId != null'>and s.brand_id=#{brandId}</if>
+      <if test='status != null'>and s.status=#{status}</if>
+      order by s.id desc limit #{size} offset #{offset}</script>
+      """)
+    List<ProductSpu> searchAdmin(AdminProductQuery query);
+
+    @Select("""
+      <script>select count(1) from product_spu s where s.deleted=0
+      <if test='keyword != null and !keyword.isBlank()'>and (s.title like concat('%',#{keyword},'%') or s.subtitle like concat('%',#{keyword},'%'))</if>
+      <if test='categoryId != null'>and s.category_id=#{categoryId}</if><if test='brandId != null'>and s.brand_id=#{brandId}</if>
+      <if test='status != null'>and s.status=#{status}</if></script>
+      """)
+    long countAdmin(AdminProductQuery query);
 }

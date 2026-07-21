@@ -72,13 +72,6 @@ DELIMITER ;
 
 USE dingdong_order;
 
-INSERT INTO cart_item(user_id, sku_id, quantity, selected)
-SELECT u.id, s.id, MOD(s.id, 3) + 1, 1
-FROM dingdong_user.mall_user u
-JOIN dingdong_product.product_sku s ON s.sku_code IN ('TEST-SKU-001', 'TEST-SKU-002', 'TEST-SKU-003', 'TEST-SKU-004')
-WHERE u.username = 'demo_buyer_01' AND s.deleted = 0
-  AND NOT EXISTS (SELECT 1 FROM cart_item c WHERE c.user_id = u.id AND c.sku_id = s.id AND c.deleted = 0);
-
 INSERT INTO mall_order(order_no, user_id, receiver_name, receiver_phone, receiver_address, total_amount, status, carrier, tracking_no, shipped_at)
 SELECT seed.order_no, u.id, CONCAT(u.nickname, '（演示）'), u.phone, '陕西省 西安市 雁塔区 科技路演示地址', s.price * seed.quantity, seed.status,
        seed.carrier, seed.tracking_no, CASE WHEN seed.status IN ('SHIPPED', 'COMPLETED') THEN NOW() - INTERVAL seed.days_ago DAY ELSE NULL END

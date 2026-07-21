@@ -26,12 +26,15 @@ public class OrderController {
     /**
      * 分页查询当前用户的订单列表，每页记录数上限 100
      */
- @GetMapping public ApiResponse<PageResponse<OrderResponse>> page(@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size){int p=Math.max(1,page),s=Math.min(100,Math.max(1,size));Long userId=OrderUserContext.require().id();return ApiResponse.success(new PageResponse<>(orderService.page(userId,p,s).stream().map(o->OrderResponse.from(o,orderService.items(o.getId()))).toList(),orderService.count(userId),p,s));}
+ @GetMapping public ApiResponse<PageResponse<OrderResponse>> page(@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size){int p=Math.max(1,page),s=Math.min(100,Math.max(1,size));Long userId=OrderUserContext.require().id();long total=orderService.count(userId);return ApiResponse.success(new PageResponse<>(orderService.page(userId,p,s).stream().map(o->OrderResponse.from(o,orderService.items(o.getId()))).toList(),total,p,s,(total+s-1)/s));}
 
     /**
      * 查询当前用户指定订单号的订单详情
      */
  @GetMapping("/{orderNo}") public ApiResponse<OrderResponse> detail(@PathVariable String orderNo){var o=orderService.get(OrderUserContext.require().id(),orderNo);return ApiResponse.success(OrderResponse.from(o,orderService.items(o.getId())));}
+
+    /** 主动取消当前用户的待支付订单。 */
+ @PostMapping("/{orderNo}/cancel") public ApiResponse<OrderResponse> cancel(@PathVariable String orderNo){var o=orderService.cancel(OrderUserContext.require().id(),orderNo);return ApiResponse.success(OrderResponse.from(o,orderService.items(o.getId())));}
 
     /**
      * 确认收货 — 将指定订单从 SHIPPED 流转为 COMPLETED

@@ -62,6 +62,42 @@ public interface OrderMapper {
     @Select("select count(1) from mall_order where user_id=#{userId}")
     long countByUserId(Long userId);
 
+    @Select("""
+      <script>select id,order_no,user_id,receiver_name,receiver_phone,receiver_address,total_amount,status,carrier,tracking_no,shipped_at,created_at
+      from mall_order where 1=1
+      <if test='orderNo != null and !orderNo.isBlank()'>and order_no like concat('%',#{orderNo},'%')</if>
+      <if test='userId != null'>and user_id=#{userId}</if>
+      <if test='status != null and !status.isBlank()'>and status=#{status}</if>
+      order by id desc limit #{size} offset #{offset}</script>
+      """)
+    List<MallOrder> findAdminPage(@Param("orderNo") String orderNo,@Param("userId") Long userId,@Param("status") String status,@Param("size") int size,@Param("offset") int offset);
+
+    @Select("""
+      <script>select count(1) from mall_order where 1=1
+      <if test='orderNo != null and !orderNo.isBlank()'>and order_no like concat('%',#{orderNo},'%')</if>
+      <if test='userId != null'>and user_id=#{userId}</if>
+      <if test='status != null and !status.isBlank()'>and status=#{status}</if></script>
+      """)
+    long countAdmin(@Param("orderNo") String orderNo,@Param("userId") Long userId,@Param("status") String status);
+
+    @Select("select count(1) from mall_order where created_at &gt;= current_date")
+    long countTodayOrders();
+
+    @Select("select coalesce(sum(total_amount),0) from mall_order where created_at &gt;= current_date and status in ('PAID','SHIPPED','COMPLETED')")
+    java.math.BigDecimal sumTodayPaidAmount();
+
+    @Select("select count(1) from mall_order where status='PAID'")
+    long countPendingShipment();
+
+    @Select("""
+      select i.sku_id,i.product_title,max(i.product_image_url) as product_image_url,
+      sum(i.quantity) as quantity,sum(i.total_amount) as sales_amount
+      from order_item i join mall_order o on o.id=i.order_id
+      where o.status in ('PAID','SHIPPED','COMPLETED')
+      group by i.sku_id,i.product_title order by quantity desc,i.sku_id desc limit #{limit}
+      """)
+    List<TopProductStat> findTopProducts(int limit);
+
     /**
      * 查询订单的所有订单项
      * @param orderId 订单 ID

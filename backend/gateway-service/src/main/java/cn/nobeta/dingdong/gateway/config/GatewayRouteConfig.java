@@ -12,7 +12,7 @@ public class GatewayRouteConfig {
         return builder.routes()
                 .route("user-service", route -> route.path("/api/auth/**", "/api/users/**", "/api/addresses/**")
                         .uri("lb://user-service"))
-                .route("order-admin-service", route -> route.path("/api/admin/orders/**")
+                .route("order-admin-service", route -> route.path("/api/admin/orders/**", "/api/admin/dashboard/**")
                         .uri("lb://order-service"))
                 .route("product-service", route -> route.path("/api/categories/**", "/api/brands/**", "/api/products/**", "/api/admin/**")
                         .uri("lb://product-service"))

@@ -12,6 +12,11 @@ spring:
     url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/dingdong_order?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USER:dingdong}
     password: ${MYSQL_PASSWORD:dingdong_dev}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_dev}
 
 server:
   port: ${SERVER_PORT:8083}
@@ -50,6 +55,8 @@ rocketmq:
     group: ${ROCKETMQ_ORDER_CONSUMER_GROUP:order-payment-consumer}
 
 app:
+  cart:
+    key-prefix: ${CART_KEY_PREFIX:dingdong:cart:}
   rocketmq:
     payment-success-topic: ${ROCKETMQ_PAYMENT_SUCCESS_TOPIC:payment-success}
     payment-consumer-group: ${ROCKETMQ_ORDER_CONSUMER_GROUP:order-payment-consumer}

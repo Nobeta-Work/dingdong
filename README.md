@@ -17,6 +17,7 @@
 - *Spring Cloud v2025.0.0*
 - ***Spring Cloud Alibaba | v2025.0.0.0***
 - - *Nacos |v3.0.3* : 服务注册配置中心
+- - *LoadBalancer* : 请求转发负载均衡组件
 - - *Dubbo* : 远程过程调用 (RPC) 中间件
 - - *RocketMQ | v5.3.1* : 消息队列中间件
 - *Redis | v7.4* : 缓存中间件
@@ -87,9 +88,16 @@ mvn -pl gateway-service spring-boot:run -Dspring-boot.run.arguments="--NACOS_ENA
 
 ## 文档说明
 [Git 流程说明](docs/GIT.md)
+
 [需求文档](docs/PRD.md)
+
 [开发迭代说明](docs/TEAM.md)
+
 [v0.2 接口契约](docs/API-v0.2.md)
+
 [v0.3 交易接口契约](docs/API-v0.3.md)
+
 [v0.4 支付与履约接口契约](docs/API-v0.4.md)
+
 [v0.5 可靠性说明](docs/API-v0.5.md)
+

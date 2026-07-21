@@ -7,7 +7,7 @@ tags:
   - api/contract
   - payment/fulfillment
 status: implemented
-updated: 2026-07-16
+updated: 2026-07-21
 related:
   - "[[API-v0.3|v0.3 交易接口契约]]"
   - "[[PRD|产品需求文档]]"
@@ -62,6 +62,8 @@ sequenceDiagram
 
 | 方法 | 路径 | 权限 | 说明 |
 |---|---|---|---|
+| GET | `/api/admin/orders?orderNo=&userId=&status=&page=1&size=20` | ADMIN | 条件分页查询订单 |
+| GET | `/api/admin/orders/{orderNo}` | ADMIN | 查询订单详情与商品快照 |
 | POST | `/api/admin/orders/{orderNo}/shipment` | ADMIN | 对已支付订单模拟发货 |
 | POST | `/api/orders/{orderNo}/confirm-receipt` | 买家本人 | 对已发货订单确认收货 |
 
@@ -72,10 +74,18 @@ POST /api/admin/orders/DD20260716123456789001/shipment
 
 状态流转：`PENDING_PAYMENT → PAID → SHIPPED → COMPLETED`。每次状态变化写入 `order_status_log`，非法状态变化返回 `ORDER_STATUS_INVALID`。
 
-> [!note] v0.4 边界
-> 当前实现支付成功事件和订单幂等消费；支付超时关单、取消释放库存、发送失败补偿与 RocketMQ 事务消息增强进入 v0.5。
+## 4. 经营统计
 
-## 4. 主要错误码
+| 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|
+| GET | `/api/admin/dashboard/overview` | ADMIN | 今日订单数、今日已支付订单金额、待发货数及热销商品前 10 名 |
+
+统计金额只计入 `PAID`、`SHIPPED`、`COMPLETED` 状态订单；热销排行按已支付及后续状态的订单项数量降序聚合。
+
+> [!note] 当前实现
+> 支付成功事件、订单幂等消费、用户取消释放库存、支付超时关单与 Outbox 发送补偿均已接入。
+
+## 5. 主要错误码
 
 | 错误码 | 含义 |
 |---|---|
