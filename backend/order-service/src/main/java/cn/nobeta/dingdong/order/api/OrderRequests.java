@@ -4,8 +4,8 @@ import java.util.List;
 
 /**
  * 订单模块的请求 DTO 集合
- * <p>内部以静态 record 定义，避免顶层文件膨胀；所有构造函数参数均可通过
- * {@link jakarta.validation.Valid} 校验。</p>
+ * 内部以静态 record 定义，避免顶层文件膨胀；所有构造函数参数均可通过
+ * {@link jakarta.validation.Valid} 校验。
  */
 public final class OrderRequests { private OrderRequests(){}
 

@@ -17,7 +17,18 @@ public final class AuthRequests {
             @NotBlank @Size(max = 32) String nickname,
             @Pattern(regexp = "^$|^1\\d{10}$", message = "手机号格式不正确") String phone,
             @jakarta.validation.constraints.Email(message = "邮箱格式不正确") String email) { }
+    /**
+     * 用户登录请求 DTO
+     * 前端提交登录表单时发送，仅需 username 和 password 两个必填字段
+     * 由 Spring Bean Validation 在控制器层自动校验非空
+     */
     public record LoginRequest(@NotBlank String username, @NotBlank String password) { }
+    /**
+     * 用户资料修改请求 DTO —— 用户资料修改链路的入参
+     * nickname 为必填，phone/email/avatarUrl 为可选字段
+     * phone 和 email 需全局唯一（仅当值发生变化时由 UserService 校验），空白字符串将被转为 null
+     * 各字段的约束校验由 Spring Bean Validation 在控制器层自动触发
+     */
     public record ProfileRequest(@NotBlank @Size(max = 32) String nickname,
                                  @Pattern(regexp = "^$|^1\\d{10}$", message = "手机号格式不正确") String phone,
                                  @jakarta.validation.constraints.Email(message = "邮箱格式不正确") String email,

@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * RocketMQ 订单超时事件发布器
- * <p>使用 RocketMQ 的延迟消息机制，将订单超时事件发送到指定 Topic。
- * 消费方（OrderTimeoutListener）在指定延迟后收到消息，执行订单关闭逻辑。</p>
+ * 使用 RocketMQ 的延迟消息机制，将订单超时事件发送到指定 Topic。
+ * 消费方（OrderTimeoutListener）在指定延迟后收到消息，执行订单关闭逻辑。
  */
 @Component
 public class RocketMqOrderTimeoutPublisher implements OrderTimeoutPublisher {

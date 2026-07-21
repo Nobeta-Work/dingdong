@@ -11,8 +11,8 @@ import java.util.List;
 
 /**
  * 购物车业务服务
- * <p>管理用户的购物车状态，支持添加商品、更新数量/选中状态、批量删除等操作。
- * 与产品服务（product-service）通过 Dubbo RPC 交互，确保商品有效性。</p>
+ * 管理用户的购物车状态，支持添加商品、更新数量/选中状态、批量删除等操作。
+ * 与产品服务（product-service）通过 Dubbo RPC 交互，确保商品有效性。
  */
 @Service
 public class CartService {
@@ -78,10 +78,8 @@ public class CartService {
 
     /**
      * 获取待结算的购物车项 — 为订单创建服务
-     * <ul>
-     * <li>当 {@code ids} 为 {@code null} 或空列表时，返回所有当前用户已选中的商品</li>
-     * <li>当 {@code ids} 不为空时，返回列表中包含的所有购物车项（需全部存在）</li>
-     * </ul>
+     * - 当 ids 为 null 或空列表时，返回所有当前用户已选中的商品
+     * - 当 ids 不为空时，返回列表中包含的所有购物车项（需全部存在）
      * @param userId 当前用户 ID
      * @param ids 购物车项 ID 列表（可选）
      * @return 有效的购物车项列表

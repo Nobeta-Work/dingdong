@@ -30,6 +30,8 @@ public class OrderController {
 
     /**
      * 查询当前用户指定订单号的订单详情
+     * 处理流程：先从安全上下文获取当前用户，再委托服务层校验订单归属并加载订单主表，
+     * 最后补充订单项列表并组装为响应对象。
      */
  @GetMapping("/{orderNo}") public ApiResponse<OrderResponse> detail(@PathVariable String orderNo){var o=orderService.get(OrderUserContext.require().id(),orderNo);return ApiResponse.success(OrderResponse.from(o,orderService.items(o.getId())));}
 

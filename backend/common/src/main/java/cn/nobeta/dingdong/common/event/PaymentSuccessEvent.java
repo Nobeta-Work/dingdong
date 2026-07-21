@@ -6,8 +6,7 @@ import java.time.LocalDateTime;
 
 /**
  * 支付成功事件
- * <p>支付服务完成支付后发布到 RocketMQ，订单服务消费此事件后将订单状态从
- * PENDING_PAYMENT 流转为 PAID。</p>
+ * 支付服务完成支付后发布到 RocketMQ，订单服务消费此事件后将订单状态从 PENDING_PAYMENT 流转为 PAID。
  * @param paymentNo 支付单号
  * @param orderNo 关联订单号
  * @param userId 支付用户 ID

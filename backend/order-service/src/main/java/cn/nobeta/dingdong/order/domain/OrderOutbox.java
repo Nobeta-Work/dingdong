@@ -3,8 +3,8 @@ import java.time.LocalDateTime;
 
 /**
  * Outbox 事件实体
- * <p>对应 order_outbox 表，实现可靠消息投递模式（Outbox Pattern）。
- * 将待发送的事件先持久化到此表，确保消息不丢失，支持重试机制。</p>
+ * 对应 order_outbox 表，实现可靠消息投递模式（Outbox Pattern）。
+ * 将待发送的事件先持久化到此表，确保消息不丢失，支持重试机制。
  */
 public class OrderOutbox {
     /** 主键 ID */

@@ -3,8 +3,8 @@ import cn.nobeta.dingdong.common.exception.BusinessException;
 
 /**
  * 订单服务用户上下文工具类
- * <p>使用 {@link ThreadLocal} 存储当前请求的认证用户信息，由 {@link OrderJwtFilter} 在过滤器中设置。
- * 同一请求线程内可通过 {@link #require()} 安全获取当前用户。</p>
+ * 使用 {@link ThreadLocal} 存储当前请求的认证用户信息，由 {@link OrderJwtFilter} 在过滤器中设置。
+ * 同一请求线程内可通过 {@link #require()} 安全获取当前用户。
  */
 public final class OrderUserContext {
     /** 线程本地变量，存储当前用户信息 */

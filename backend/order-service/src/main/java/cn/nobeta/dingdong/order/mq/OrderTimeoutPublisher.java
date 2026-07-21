@@ -3,7 +3,7 @@ import cn.nobeta.dingdong.common.event.OrderTimeoutEvent;
 
 /**
  * 订单超时事件发布器接口
- * <p>定义订单超时事件的发布契约，具体实现为 {@link RocketMqOrderTimeoutPublisher}。</p>
+ * 定义订单超时事件的发布契约，具体实现为 {@link RocketMqOrderTimeoutPublisher}。
  */
 public interface OrderTimeoutPublisher {
     /**

@@ -17,8 +17,8 @@ import java.util.*;
 
 /**
  * JWT 认证过滤器
- * <p>拦截所有 /api/* 请求，解析 Bearer Token 并设置用户上下文。
- * 使用 HMAC-SHA256 算法验证 Token 签名和有效期。</p>
+ * 拦截所有 /api/* 请求，解析 Bearer Token 并设置用户上下文。
+ * 使用 HMAC-SHA256 算法验证 Token 签名和有效期。
  */
 @Component
 public class OrderJwtFilter extends OncePerRequestFilter {
@@ -72,11 +72,10 @@ public class OrderJwtFilter extends OncePerRequestFilter {
 
     /**
      * 解析并验证 JWT Token
-     * <ol>
-     * <li>校验格式（三段式）</li>
-     * <li>校验签名（HMAC-SHA256）</li>
-     * <li>校验有效期（exp 字段）</li>
-     * </ol>
+        * 校验流程：
+        * 1. 校验格式（三段式）
+        * 2. 校验签名（HMAC-SHA256）
+        * 3. 校验有效期（exp 字段）
      */
     private Map<String, Object> parse(String token) throws Exception {
         String[] p = token.split("\\.");

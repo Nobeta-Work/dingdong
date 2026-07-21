@@ -18,8 +18,8 @@ import java.util.*;
 
 /**
  * 订单核心业务服务
- * <p>实现了订单的生命周期管理：创建、支付、发货、收货、关闭等。
- * 使用 Dubbo RPC 远程调用产品服务的库存锁定、用户服务的地址快照，事务一致。</p>
+ * 实现了订单的生命周期管理：创建、支付、发货、收货、关闭等。
+ * 使用 Dubbo RPC 远程调用产品服务的库存锁定、用户服务的地址快照，事务一致。
  */
 @Service
 public class OrderService {
@@ -36,29 +36,33 @@ public class OrderService {
     }
 
     /**
-     * 创建订单 — 核心下单流程（步骤 1 ~ 10）
-     * <ol>
-     * <li>从购物车获取待结算商品</li>
-     * <li>通过 RPC 获取收件地址快照</li>
-     * <li>生成唯一订单号</li>
-     * <li>调用产品服务锁定库存（分布式事务起点）</li>
-     * <li>基于快照价格计算订单总金额</li>
-     * <li>写入订单主表（mall_order）</li>
-     * <li>写入订单项（order_item）并保存商品快照</li>
-     * <li>删除已结算的购物车项</li>
-     * <li>创建超时关闭事件（Outbox 模式）</li>
-     * <li>提交事务后发布超时事件（保障一致性）</li>
-     * </ol>
+     * 创建订单 — 核心下单流程，共 10 个步骤
+     * 价格校验链路核心说明：
+     * - 步骤 4 通过 RPC 调用 ProductInventoryFacadeImpl#lockInventory
+     *   获取包含数据库权威价格的商品快照
+     * - 步骤 5 使用快照价格计算订单总金额，拒绝信任客户端传入的价格
+     * - 步骤 7 将快照价格写入订单项（unit_price / total_amount），作为历史快照保存
+     * 具体步骤：
+     *   1. 从购物车获取待结算商品
+     *   2. 通过 RPC 获取收件地址快照
+     *   3. 生成唯一订单号
+     *   4. 调用产品服务锁定库存（分布式事务起点）
+     *   5. 基于快照价格计算订单总金额
+     *   6. 写入订单主表（mall_order）
+     *   7. 写入订单项（order_item）并保存商品快照
+     *   8. 删除已结算的购物车项
+     *   9. 创建超时关闭事件（Outbox 模式）
+     *  10. 提交事务后发布超时事件（保障一致性）
      * @param userId 当前用户 ID
      * @param request 创建订单请求（含地址 ID、购物车项 ID 列表）
      * @return 新创建的订单实体（包含数据库生成的 ID）
-     * @throws BusinessException 业务校验失败（如商品不可售、购物车项不存在）
+     * @throws BusinessException 业务校验失败，如商品不可售、购物车项不存在
      */
     @Transactional
     public MallOrder create(Long userId, CreateOrderRequest request) {
         // 1. 从购物车获取待结算商品
         List<CartItem> carts = cartService.itemsForOrder(userId, request.cartItemIds());
-        // 2. 获取地址快照（避免后续地址修改影响历史订单）
+        // 2. 获取地址快照：这里直接拿下单时刻的收货信息，避免后续用户修改地址影响历史订单展示
         var address = addressFacade.getAddressSnapshot(userId, request.addressId());
         // 3. 生成订单号（格式：DD + yyyyMMddHHmmssSSS + 3位随机数）
         String orderNo = nextOrderNo();
@@ -67,21 +71,24 @@ public class OrderService {
             // 4. 准备锁定库存的请求参数
             List<ProductInventoryFacade.LockItem> locks = carts.stream().map(i -> new ProductInventoryFacade.LockItem(i.getSkuId(), i.getQuantity())).toList();
             // 调用产品服务锁定库存（返回商品快照用于计算金额）
+            // 价格校验链路：lockInventory 返回的 SkuSnapshot.price 是数据库中的权威价格
             List<ProductInventoryFacade.SkuSnapshot> snapshots = productFacade.lockInventory(orderNo, locks);
             locked = true;
             // 建立商品快照索引（skuId → snapshot）
             Map<Long, ProductInventoryFacade.SkuSnapshot> snapshotMap = new HashMap<>();
             snapshots.forEach(s -> snapshotMap.put(s.skuId(), s));
-            // 5. 基于快照价格计算订单总金额（使用下单时的价格）
+            // 5. 基于快照价格计算订单总金额（使用下单时的价格，拒绝客户端传入的值）
             BigDecimal total = BigDecimal.ZERO;
             for (CartItem cart : carts) {
                 var snapshot = snapshotMap.get(cart.getSkuId());
                 if (snapshot == null) throw new BusinessException("PRODUCT_SKU_NOT_FOUND", "商品不可售");
+                // 价格校验：累加快照价格 × 数量，确保总金额由服务端权威价格计算得出
                 total = total.add(snapshot.price().multiply(BigDecimal.valueOf(cart.getQuantity())));
             }
             // 6. 构建订单主表实体
             MallOrder order = new MallOrder();
             order.setOrderNo(orderNo); order.setUserId(userId);
+            // 订单收件人信息直接来源于地址快照，保证订单落库时保存的是历史状态
             order.setReceiverName(address.receiverName());
             order.setReceiverPhone(address.receiverPhone());
             order.setReceiverAddress(String.join(" ", address.province(), address.city(), address.district(), address.detailAddress()));
@@ -99,8 +106,10 @@ public class OrderService {
                 item.setProductTitle(snapshot.title());
                 item.setProductImageUrl(snapshot.mainImageUrl());
                 item.setSpecJson(snapshot.specJson());
+                // 价格校验：写入下单时的快照单价（unitPrice），用于历史追溯
                 item.setUnitPrice(snapshot.price());
                 item.setQuantity(cart.getQuantity());
+                // 价格校验：计算该项小计金额（快照价格 × 数量）
                 item.setTotalAmount(snapshot.price().multiply(BigDecimal.valueOf(cart.getQuantity())));
                 orderMapper.insertItem(item); // 插入订单项记录
             }
@@ -119,17 +128,29 @@ public class OrderService {
         }
     }
 
-    /** 查询当前用户指定订单号订单，不存在时抛出业务异常 */
+    /**
+     * 查询当前用户指定订单号的订单主记录。
+     * 先按订单号和用户 ID 做归属校验，再将空结果转换为业务异常，避免控制层重复处理空值。
+     * @param userId 当前用户 ID
+     * @param orderNo 订单号
+     * @return 订单主记录
+     * @throws BusinessException 订单不存在时抛出
+     */
     public MallOrder get(Long userId, String orderNo) {
         MallOrder order = orderMapper.findOwned(orderNo, userId);
         if (order == null) throw new BusinessException("ORDER_NOT_FOUND", "订单不存在");
         return order;
     }
 
-    /** 查询指定订单的所有订单项 */
+    /**
+     * 查询指定订单的所有订单项。
+     * 订单详情页需要同时展示主单信息和商品明细，因此这里单独提供订单项列表查询。
+     * @param orderId 订单 ID
+     * @return 订单项列表
+     */
     public List<OrderItem> items(Long orderId) { return orderMapper.findItems(orderId); }
 
-    /** 分页查询当前用户订单 */
+    /** 分页查询当前用户订单。 */
     public List<MallOrder> page(Long userId, int page, int size) {
         return orderMapper.findPage(userId, size, (page - 1) * size);
     }
@@ -157,9 +178,29 @@ public class OrderService {
                         .toList());
     }
 
+    public List<MallOrder> adminPage(String orderNo, Long userId, String status, int page, int size) {
+        validateStatus(status);
+        return orderMapper.findAdminPage(orderNo, userId, status, size, (page - 1) * size);
+    }
+
+    public long countAdmin(String orderNo, Long userId, String status) {
+        validateStatus(status);
+        return orderMapper.countAdmin(orderNo, userId, status);
+    }
+
+    public cn.nobeta.dingdong.order.api.OrderResponses.DashboardOverview dashboardOverview() {
+        return new cn.nobeta.dingdong.order.api.OrderResponses.DashboardOverview(
+                orderMapper.countTodayOrders(),
+                orderMapper.sumTodayPaidAmount(),
+                orderMapper.countPendingShipment(),
+                orderMapper.findTopProducts(10).stream()
+                        .map(cn.nobeta.dingdong.order.api.OrderResponses.TopProductResponse::from)
+                        .toList());
+    }
+
     /**
-     * 标记订单已支付 — 由 {@link PaymentSuccessListener} 消费支付成功事件后调用
-     * <p>将订单状态从 PENDING_PAYMENT 流转为 PAID，同时确认锁定库存为实际扣减。</p>
+     * 标记订单已支付 — 由 PaymentSuccessListener 消费支付成功事件后调用
+     * 将订单状态从 PENDING_PAYMENT 流转为 PAID，同时确认锁定库存为实际扣减。
      * @param orderNo 订单号
      * @param paymentNo 支付单号（用于关联支付记录）
      * @param paidAt 支付成功时间
@@ -178,8 +219,8 @@ public class OrderService {
     }
 
     /**
-     * 关闭未支付订单 — 由 {@link OrderTimeoutListener} 消费超时事件后调用
-     * <p>将订单状态从 PENDING_PAYMENT 流转为 CANCELED，释放已锁定的库存。</p>
+     * 关闭未支付订单 — 由 OrderTimeoutListener 消费超时事件后调用
+     * 将订单状态从 PENDING_PAYMENT 流转为 CANCELED，释放已锁定的库存。
      * @param orderNo 订单号
      */
     @Transactional
@@ -230,7 +271,13 @@ public class OrderService {
         return requireOrder(orderNo);
     }
 
-    /** 内部工具方法：根据订单号查询订单，不存在时抛业务异常 */
+    /**
+     * 内部工具方法：根据订单号查询订单，不存在时抛业务异常。
+     * 该方法用于支付、发货、确认收货等需要直接获取订单主记录的业务场景。
+     * @param orderNo 订单号
+     * @return 订单主记录
+     * @throws BusinessException 订单不存在时抛出
+     */
     public MallOrder requireOrder(String orderNo) {
         MallOrder order = orderMapper.findByOrderNo(orderNo);
         if (order == null) throw new BusinessException("ORDER_NOT_FOUND", "订单不存在");
@@ -239,7 +286,7 @@ public class OrderService {
 
     /**
      * 事务提交后发布超时事件（Outbox 模式）
-     * <p>若当前无活跃事务，立即发布；否则注册一个事务同步回调，在 {@link TransactionSynchronization#afterCommit()} 中执行。</p>
+     * 若当前无活跃事务，立即发布；否则注册一个事务同步回调，在 afterCommit() 中执行。
      * @param eventId order_outbox 记录 ID
      */
     private void publishTimeoutAfterCommit(Long eventId) {

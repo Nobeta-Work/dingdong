@@ -5,8 +5,16 @@ import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Gateway 路由配置 —— 登录链路中请求分发的路由规则
+ * 将前端统一请求路径按前缀匹配路由到对应的微服务（先经 JwtGatewayFilter 认证拦截）
+ */
 @Configuration
 public class GatewayRouteConfig {
+    /**
+     * 定义叮咚商城各微服务的路由映射
+     * /api/auth/** → user-service（登录/注册接口由此进入）
+     */
     @Bean
     RouteLocator dingdongRoutes(RouteLocatorBuilder builder) {
         return builder.routes()
