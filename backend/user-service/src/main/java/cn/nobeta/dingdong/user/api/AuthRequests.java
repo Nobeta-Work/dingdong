@@ -16,7 +16,9 @@ public final class AuthRequests {
             @NotBlank @Size(min = 8, max = 72, message = "密码长度应为 8-72 位") String password,
             @NotBlank @Size(max = 32) String nickname,
             @Pattern(regexp = "^$|^1\\d{10}$", message = "手机号格式不正确") String phone,
-            @jakarta.validation.constraints.Email(message = "邮箱格式不正确") String email) { }
+            @jakarta.validation.constraints.Email(message = "邮箱格式不正确") String email,
+            String code) { }
+
     /**
      * 用户登录请求 DTO
      * 前端提交登录表单时发送，仅需 username 和 password 两个必填字段
@@ -33,4 +35,14 @@ public final class AuthRequests {
                                  @Pattern(regexp = "^$|^1\\d{10}$", message = "手机号格式不正确") String phone,
                                  @jakarta.validation.constraints.Email(message = "邮箱格式不正确") String email,
                                  @Size(max = 512) String avatarUrl) { }
+
+    public record SendSmsCodeRequest(
+            @NotBlank @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,
+            @NotBlank String scene
+    ) { }
+
+    public record SmsLoginRequest(
+            @NotBlank @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,
+            @NotBlank String code
+    ) { }
 }
