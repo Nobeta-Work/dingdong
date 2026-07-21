@@ -3,6 +3,7 @@ package cn.nobeta.dingdong.product.web;
 import cn.nobeta.dingdong.common.api.ApiResponse;
 import cn.nobeta.dingdong.product.api.ProductRequests.*;
 import cn.nobeta.dingdong.product.api.ProductResponses.*;
+import cn.nobeta.dingdong.product.domain.AdminProductQuery;
 import cn.nobeta.dingdong.product.service.CatalogService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -33,7 +34,7 @@ public class AdminCatalogController {
     @PostMapping("/brands") @ResponseStatus(HttpStatus.CREATED) public ApiResponse<BrandResponse> createBrand(@Valid @RequestBody BrandRequest request){return ApiResponse.success(BrandResponse.from(catalogService.saveBrand(null,request)));}
     /** 更新品牌 */
     @PutMapping("/brands/{id}") public ApiResponse<BrandResponse> updateBrand(@PathVariable Long id,@Valid @RequestBody BrandRequest request){return ApiResponse.success(BrandResponse.from(catalogService.saveBrand(id,request)));}
-    /** 新增商品 SPU */
+    @GetMapping("/products") public ApiResponse<PageResponse<ProductSummary>> products(@RequestParam(required=false) String keyword,@RequestParam(required=false) Long categoryId,@RequestParam(required=false) Long brandId,@RequestParam(required=false) Integer status,@RequestParam(defaultValue="1") int page,@RequestParam(defaultValue="20") int size){int p=Math.max(1,page),s=Math.min(100,Math.max(1,size));AdminProductQuery query=new AdminProductQuery(keyword,categoryId,brandId,status,s,(p-1)*s);long total=catalogService.countAdminProducts(query);return ApiResponse.success(new PageResponse<>(catalogService.adminProducts(query).stream().map(ProductSummary::from).toList(),total,p,s,(total+s-1)/s));}
     @PostMapping("/products") @ResponseStatus(HttpStatus.CREATED) public ApiResponse<ProductDetail> createSpu(@Valid @RequestBody SpuRequest request){var spu=catalogService.saveSpu(null,request);return ApiResponse.success(ProductDetail.from(spu,catalogService.skus(spu.getId(),false)));}
     /** 更新商品 SPU */
     @PutMapping("/products/{id}") public ApiResponse<ProductDetail> updateSpu(@PathVariable Long id,@Valid @RequestBody SpuRequest request){var spu=catalogService.saveSpu(id,request);return ApiResponse.success(ProductDetail.from(spu,catalogService.skus(id,false)));}

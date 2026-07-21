@@ -183,6 +183,18 @@ public class UserService {
         return profile(userId);
     }
 
+    @Transactional
+    public void changePassword(Long userId, AuthRequests.ChangePasswordRequest request) {
+        MallUser current = profile(userId);
+        if (!passwordEncoder.matches(request.currentPassword(), current.getPasswordHash())) {
+            throw new BusinessException("USER_PASSWORD_INCORRECT", "当前密码不正确");
+        }
+        if (passwordEncoder.matches(request.newPassword(), current.getPasswordHash())) {
+            throw new BusinessException("USER_PASSWORD_UNCHANGED", "新密码不能与当前密码相同");
+        }
+        userMapper.updatePassword(userId, passwordEncoder.encode(request.newPassword()));
+    }
+
     /**
      * 校验手机号和邮箱的唯一性
      * 仅当字段非空时才查询数据库，若已有未删除用户占用则抛出业务异常

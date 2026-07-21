@@ -74,4 +74,6 @@ public class CatalogService {
     private Brand requireBrand(Long id){Brand v=brandMapper.findById(id);if(v==null)throw new BusinessException("PRODUCT_BRAND_NOT_FOUND","商品品牌不存在");return v;}
     /** 查询 SPU 下的 SKU 列表（按 saleable 筛选在售/全部） */
     public List<ProductSku> skus(Long spuId,boolean saleable){return saleable?productMapper.findSaleableSkusBySpuId(spuId):productMapper.findSkusBySpuId(spuId);}
+    public List<ProductSpu> adminProducts(AdminProductQuery query){return productMapper.searchAdmin(query);}
+    public long countAdminProducts(AdminProductQuery query){return productMapper.countAdmin(query);}
 }

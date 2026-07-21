@@ -3,11 +3,11 @@ import java.time.LocalDateTime;
 
 /**
  * 购物车项实体
- * 对应 cart_item 表，记录用户加入购物车的商品。
- * 支持选中/未选中状态，方便用户批量结算。
+ * <p>存储于 Redis 用户购物车 Hash，记录用户加入购物车的商品。
+ * 支持选中/未选中状态，方便用户批量结算。</p>
  */
 public class CartItem {
-    /** 主键 ID */
+    /** 购物车项 ID；Redis 实现中与 SKU ID 保持一致 */
     private Long id;
     /** 所属用户 ID */
     private Long userId;

@@ -2,6 +2,7 @@ package cn.nobeta.dingdong.product.service;
 
 import cn.nobeta.dingdong.common.exception.BusinessException;
 import cn.nobeta.dingdong.product.api.ProductRequests.SpuRequest;
+import cn.nobeta.dingdong.product.domain.AdminProductQuery;
 import cn.nobeta.dingdong.product.mapper.BrandMapper;
 import cn.nobeta.dingdong.product.mapper.CategoryMapper;
 import cn.nobeta.dingdong.product.mapper.ProductMapper;
@@ -20,5 +21,20 @@ class CatalogServiceTest {
         BusinessException exception = assertThrows(BusinessException.class, () -> service.saveSpu(null, new SpuRequest("演示商品", null, null, null, 1L, 2L, 1)));
         assertEquals("PRODUCT_CATEGORY_NOT_FOUND", exception.getCode());
         verifyNoInteractions(brandMapper, productMapper);
+    }
+
+    @Test
+    void delegatesAdminProductFilteringToMapper() {
+        CategoryMapper categoryMapper = mock(CategoryMapper.class);
+        BrandMapper brandMapper = mock(BrandMapper.class);
+        ProductMapper productMapper = mock(ProductMapper.class);
+        CatalogService service = new CatalogService(categoryMapper, brandMapper, productMapper, mock(ProductDetailCacheService.class));
+        AdminProductQuery query = new AdminProductQuery("演示", 1L, 2L, 1, 20, 0);
+
+        service.adminProducts(query);
+        service.countAdminProducts(query);
+
+        verify(productMapper).searchAdmin(query);
+        verify(productMapper).countAdmin(query);
     }
 }

@@ -45,4 +45,7 @@ public final class AuthRequests {
             @NotBlank @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,
             @NotBlank String code
     ) { }
+    public record ChangePasswordRequest(
+            @NotBlank String currentPassword,
+            @NotBlank @Size(min = 8, max = 72, message = "新密码长度应为 8-72 位") String newPassword) { }
 }

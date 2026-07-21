@@ -3,10 +3,10 @@ import cn.nobeta.dingdong.common.exception.BusinessException;
 import cn.nobeta.dingdong.common.rpc.ProductInventoryFacade;
 import cn.nobeta.dingdong.order.api.OrderRequests.*;
 import cn.nobeta.dingdong.order.domain.CartItem;
-import cn.nobeta.dingdong.order.mapper.CartMapper;
+import cn.nobeta.dingdong.order.repository.CartRepository;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -16,63 +16,62 @@ import java.util.List;
  */
 @Service
 public class CartService {
-    private final CartMapper cartMapper;
+    private final CartRepository cartRepository;
     @DubboReference(check=false) private ProductInventoryFacade productFacade;
 
-    public CartService(CartMapper cartMapper){this.cartMapper=cartMapper;}
+    public CartService(CartRepository cartRepository){this.cartRepository=cartRepository;}
 
     /** 查询当前用户购物车列表 */
-    public List<CartItem> list(Long userId){return cartMapper.findByUserId(userId);}
+    public List<CartItem> list(Long userId){return cartRepository.findByUserId(userId);}
 
     /**
      * 添加商品到购物车（幂等合并）
-     * 价格校验链路辅助：通过 RPC 调用 ProductInventoryFacade#getSkuSnapshots
-     * 验证商品 SKU 存在且在售，确保用户无法将无效商品加入购物车。
-     * 处理流程：
-     *   1. 通过 RPC 验证商品 SKU 存在并获取快照
-     *   2. 查询该用户是否已存在该 SKU 的购物车项
-     *   3. 若不存在则创建新项，否则累加数量（上限 99）
-     *   4. 标记为选中状态
+     * <ol>
+     * <li>通过 RPC 验证商品 SKU 存在并获取快照</li>
+     * <li>查询该用户是否已存在该 SKU 的购物车项</li>
+     * <li>若不存在则创建新项，否则累加数量（上限 99）</li>
+     * <li>标记为选中状态</li>
+     * </ol>
      */
-    @Transactional public CartItem add(Long userId,AddCartItemRequest r){
+    public CartItem add(Long userId,AddCartItemRequest r){
         // 1. 验证商品有效性（调用产品服务）
         productFacade.getSkuSnapshots(List.of(r.skuId()));
         // 2. 查询现有购物车项
-        CartItem current=cartMapper.findBySku(userId,r.skuId());
+        CartItem current=cartRepository.findBySku(userId,r.skuId());
         if(current==null){
             // 新建购物车项
             current=new CartItem();
             current.setUserId(userId);
             current.setSkuId(r.skuId());
+            current.setId(r.skuId());
             current.setQuantity(r.quantity());
             current.setSelected(true);
-            cartMapper.insert(current);
+            current.setCreatedAt(LocalDateTime.now());
         }else{
             // 合并数量（累加）
             current.setQuantity(Math.addExact(current.getQuantity(),r.quantity()));
             if(current.getQuantity()>99)throw new BusinessException("CART_QUANTITY_LIMIT","单个商品最多购买 99 件");
-            cartMapper.update(current);
+            current.setSelected(true);
         }
-        return require(userId,current.getId());
+        return cartRepository.save(current);
     }
 
     /** 更新购物车项数量与选中状态 */
-    @Transactional public CartItem update(Long userId,Long id,UpdateCartItemRequest r){
+    public CartItem update(Long userId,Long id,UpdateCartItemRequest r){
         CartItem item=require(userId,id);
         item.setQuantity(r.quantity());
         item.setSelected(r.selected());
-        cartMapper.update(item);
-        return require(userId,id);
+        return cartRepository.save(item);
     }
 
-    /** 删除购物车项（逻辑删除） */
-    @Transactional public void delete(Long userId,Long id){
-        if(cartMapper.deleteOwned(id,userId)==0)throw new BusinessException("CART_ITEM_NOT_FOUND","购物车商品不存在");
+    /** 从 Redis 删除购物车项 */
+    public void delete(Long userId,Long id){
+        if(!cartRepository.deleteOwned(userId,id))throw new BusinessException("CART_ITEM_NOT_FOUND","购物车商品不存在");
     }
 
     /** 内部校验：确认指定 ID 的购物车项属于当前用户 */
     public CartItem require(Long userId,Long id){
-        CartItem item=cartMapper.findOwned(id,userId);
+        CartItem item=cartRepository.findOwned(userId,id);
         if(item==null)throw new BusinessException("CART_ITEM_NOT_FOUND","购物车商品不存在");
         return item;
     }
@@ -88,7 +87,7 @@ public class CartService {
      */
     public List<CartItem> itemsForOrder(Long userId,List<Long> ids){
         // 查询当前用户所有购物车项
-        List<CartItem> source=cartMapper.findByUserId(userId);
+        List<CartItem> source=cartRepository.findByUserId(userId);
         // 筛选符合条件的商品
         List<CartItem> result=(ids==null||ids.isEmpty())?
                 // 无指定 ID → 取所有选中项
@@ -102,10 +101,11 @@ public class CartService {
     }
 
     /**
-     * 订单创建成功后批量删除购物车项（逻辑删除）
-     * 调用者需确保 ids 与 itemsForOrder 返回的项一一对应，避免误删用户未结算的商品。
+     * 订单创建成功后从 Redis 批量删除购物车项
+     * <p>调用者需确保 {@code ids} 与 {@link #itemsForOrder} 返回的项一一对应，
+     * 避免误删用户未结算的商品。</p>
      */
-    @Transactional public void removeAfterOrder(Long userId,List<Long> ids){
-        if(!ids.isEmpty())cartMapper.deleteBatch(userId,ids);
+    public void removeAfterOrder(Long userId,List<Long> ids){
+        cartRepository.deleteBatch(userId,ids);
     }
 }

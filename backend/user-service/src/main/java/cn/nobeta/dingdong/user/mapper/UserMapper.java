@@ -50,4 +50,7 @@ public interface UserMapper {
 
     @Select("select id, username, password_hash, nickname, phone, email, avatar_url, role, status, created_at, updated_at from mall_user where phone = #{phone} and deleted = 0")
     MallUser findByPhone(String phone);
+
+    @Update("update mall_user set password_hash=#{passwordHash}, updated_at=current_timestamp where id=#{id} and deleted=0")
+    int updatePassword(@Param("id") Long id, @Param("passwordHash") String passwordHash);
 }

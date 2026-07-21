@@ -52,16 +52,19 @@ public class OrderJwtFilter extends OncePerRequestFilter {
             reject(res, "AUTH_UNAUTHORIZED", "请先登录");
             return;
         }
+        Map<String, Object> claims;
         try {
-            // 解析 Token 并设置用户上下文
-            Map<String, Object> claims = parse(header.substring(7));
-            OrderUserContext.set(new CurrentOrderUser(
-                    ((Number) claims.get("sub")).longValue(),
-                    (String) claims.get("role")
-            ));
-            chain.doFilter(req, res);
+            claims = parse(header.substring(7));
         } catch (Exception e) {
             reject(res, "AUTH_TOKEN_INVALID", "无效或已过期的登录令牌");
+            return;
+        }
+        OrderUserContext.set(new CurrentOrderUser(
+                ((Number) claims.get("sub")).longValue(),
+                (String) claims.get("role")
+        ));
+        try {
+            chain.doFilter(req, res);
         } finally {
             OrderUserContext.clear();
         }

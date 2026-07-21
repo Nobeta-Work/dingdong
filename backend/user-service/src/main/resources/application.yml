@@ -7,7 +7,7 @@ spring:
     nacos:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
       discovery:
-        enabled: ${NACOS_ENABLED:false}
+        enabled: ${NACOS_ENABLED:true}
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/dingdong_user?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USER:dingdong}
@@ -21,14 +21,20 @@ spring:
 server:
   port: ${SERVER_PORT:8081}
 
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
 dubbo:
   application:
     name: ${spring.application.name}
   protocol:
     name: tri
     port: -1
+    serialization: fastjson2
   registry:
     address: nacos://${NACOS_SERVER_ADDR:127.0.0.1:8848}
+    register-mode: interface
 
 management:
   endpoints:

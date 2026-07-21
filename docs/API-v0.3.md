@@ -7,7 +7,7 @@ tags:
   - api/contract
   - order/trade
 status: implemented
-updated: 2026-07-16
+updated: 2026-07-21
 related:
   - "[[API-v0.2|v0.2 接口契约]]"
   - "[[PRD|产品需求文档]]"
@@ -39,6 +39,8 @@ PUT /api/cart/items/5
 
 单个 SKU 最多加入 99 件；结算时仍由后端重新校验库存和价格，购物车价格不作为订单金额依据。
 
+购物车以用户维度存入 Redis Hash：键为 `dingdong:cart:{userId}`，Hash field 为 SKU ID。接口中的购物车项 `id` 与 `skuId` 相同；Redis 不可用时返回 `CART_STORAGE_UNAVAILABLE`，不会回退到数据库或静默创建订单。
+
 ## 2. 创建订单
 
 | 方法 | 路径 | 说明 |
@@ -46,6 +48,7 @@ PUT /api/cart/items/5
 | POST | `/api/orders` | 根据地址与购物车项创建待支付订单 |
 | GET | `/api/orders?page=1&size=20` | 查询当前用户订单分页 |
 | GET | `/api/orders/{orderNo}` | 查询当前用户订单详情 |
+| POST | `/api/orders/{orderNo}/cancel` | 取消自己的待支付订单并释放锁定库存 |
 
 ```json
 POST /api/orders
@@ -106,8 +109,8 @@ sequenceDiagram
 - 订单项保存商品名称、图片、规格、单价和数量；订单保存收件人、电话与完整地址，因此商品/地址后续修改不会影响历史订单。
 - 订单库写入失败时，订单服务调用产品服务释放已锁库存。
 
-> [!note] v0.3 边界
-> 当前订单状态为 `PENDING_PAYMENT`。支付成功确认扣减、取消释放与超时关单将在 v0.4/v0.5 接入支付服务和 RocketMQ 后完成。
+> [!note] 当前实现
+> 支付成功确认扣减、用户取消释放库存与 RocketMQ 超时关单均已接入；本文件保留基础交易接口契约。
 
 ## 4. 主要错误码
 
@@ -115,8 +118,10 @@ sequenceDiagram
 |---|---|
 | `CART_ITEM_NOT_FOUND` | 购物车项不存在、不属于当前用户，或没有选中商品 |
 | `CART_QUANTITY_LIMIT` | 单 SKU 购买数量超过 99 |
+| `CART_STORAGE_UNAVAILABLE` | Redis 购物车暂不可用 |
 | `INVENTORY_INSUFFICIENT` | 当前可用库存不足 |
 | `INVENTORY_INVALID_QUANTITY` | 锁库存数量不合法 |
 | `USER_ADDRESS_NOT_FOUND` | 收货地址不存在或不属于当前用户 |
 | `ORDER_NOT_FOUND` | 订单不存在或不属于当前用户 |
+| `ORDER_STATUS_INVALID` | 订单当前状态不允许取消 |
 | `AUTH_UNAUTHORIZED` / `AUTH_TOKEN_INVALID` | 未登录、令牌无效或已过期 |

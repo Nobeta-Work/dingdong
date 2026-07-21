@@ -7,14 +7,23 @@ spring:
     nacos:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
       discovery:
-        enabled: ${NACOS_ENABLED:false}
+        enabled: ${NACOS_ENABLED:true}
   datasource:
     url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/dingdong_order?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: ${MYSQL_USER:dingdong}
     password: ${MYSQL_PASSWORD:dingdong_dev}
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redis_dev}
 
 server:
   port: ${SERVER_PORT:8083}
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
 
 dubbo:
   application:
@@ -22,8 +31,10 @@ dubbo:
   protocol:
     name: tri
     port: -1
+    serialization: fastjson2
   registry:
     address: nacos://${NACOS_SERVER_ADDR:127.0.0.1:8848}
+    register-mode: interface
 
 management:
   endpoints:
@@ -46,10 +57,14 @@ security:
 
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV_ADDR:127.0.0.1:9876}
+  producer:
+    group: ${ROCKETMQ_ORDER_PRODUCER_GROUP:order-producer}
   consumer:
     group: ${ROCKETMQ_ORDER_CONSUMER_GROUP:order-payment-consumer}
 
 app:
+  cart:
+    key-prefix: ${CART_KEY_PREFIX:dingdong:cart:}
   rocketmq:
     payment-success-topic: ${ROCKETMQ_PAYMENT_SUCCESS_TOPIC:payment-success}
     payment-consumer-group: ${ROCKETMQ_ORDER_CONSUMER_GROUP:order-payment-consumer}

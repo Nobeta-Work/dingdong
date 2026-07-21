@@ -158,6 +158,46 @@ public class OrderService {
     /** 统计当前用户订单总数 */
     public long count(Long userId) { return orderMapper.countByUserId(userId); }
 
+    public List<MallOrder> adminPage(String orderNo, Long userId, String status, int page, int size) {
+        validateStatus(status);
+        return orderMapper.findAdminPage(orderNo, userId, status, size, (page - 1) * size);
+    }
+
+    public long countAdmin(String orderNo, Long userId, String status) {
+        validateStatus(status);
+        return orderMapper.countAdmin(orderNo, userId, status);
+    }
+
+    public cn.nobeta.dingdong.order.api.OrderResponses.DashboardOverview dashboardOverview() {
+        return new cn.nobeta.dingdong.order.api.OrderResponses.DashboardOverview(
+                orderMapper.countTodayOrders(),
+                orderMapper.sumTodayPaidAmount(),
+                orderMapper.countPendingShipment(),
+                orderMapper.findTopProducts(10).stream()
+                        .map(cn.nobeta.dingdong.order.api.OrderResponses.TopProductResponse::from)
+                        .toList());
+    }
+
+    public List<MallOrder> adminPage(String orderNo, Long userId, String status, int page, int size) {
+        validateStatus(status);
+        return orderMapper.findAdminPage(orderNo, userId, status, size, (page - 1) * size);
+    }
+
+    public long countAdmin(String orderNo, Long userId, String status) {
+        validateStatus(status);
+        return orderMapper.countAdmin(orderNo, userId, status);
+    }
+
+    public cn.nobeta.dingdong.order.api.OrderResponses.DashboardOverview dashboardOverview() {
+        return new cn.nobeta.dingdong.order.api.OrderResponses.DashboardOverview(
+                orderMapper.countTodayOrders(),
+                orderMapper.sumTodayPaidAmount(),
+                orderMapper.countPendingShipment(),
+                orderMapper.findTopProducts(10).stream()
+                        .map(cn.nobeta.dingdong.order.api.OrderResponses.TopProductResponse::from)
+                        .toList());
+    }
+
     /**
      * 标记订单已支付 — 由 PaymentSuccessListener 消费支付成功事件后调用
      * 将订单状态从 PENDING_PAYMENT 流转为 PAID，同时确认锁定库存为实际扣减。
@@ -193,6 +233,24 @@ public class OrderService {
         productFacade.unlockInventory(orderNo);
         // 记录状态变更日志
         orderMapper.insertStatusLog(order.getId(), "PENDING_PAYMENT", "CANCELED", "SYSTEM", null, "支付超时自动关闭");
+    }
+
+    /** 用户主动取消自己的待支付订单，并释放库存锁定。 */
+    @Transactional
+    public MallOrder cancel(Long userId, String orderNo) {
+        MallOrder order = get(userId, orderNo);
+        if ("CANCELED".equals(order.getStatus())) return order;
+        if (!"PENDING_PAYMENT".equals(order.getStatus())) {
+            throw new BusinessException("ORDER_STATUS_INVALID", "仅待支付订单可取消");
+        }
+        if (orderMapper.updateStatus(orderNo, "PENDING_PAYMENT", "CANCELED") == 0) {
+            MallOrder latest = get(userId, orderNo);
+            if ("CANCELED".equals(latest.getStatus())) return latest;
+            throw new BusinessException("ORDER_STATUS_INVALID", "订单状态已变化，无法取消");
+        }
+        productFacade.unlockInventory(orderNo);
+        orderMapper.insertStatusLog(order.getId(), "PENDING_PAYMENT", "CANCELED", "USER", userId, "用户主动取消订单");
+        return requireOrder(orderNo);
     }
 
     /** 管理员发货（仅支持 PAID 状态的订单） */
@@ -246,5 +304,11 @@ public class OrderService {
     /** 生成下一订单号：DD + yyyyMMddHHmmssSSS + 3位随机数（0~999） */
     private String nextOrderNo() {
         return "DD" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS")) + String.format("%03d", new Random().nextInt(1000));
+    }
+
+    private void validateStatus(String status) {
+        if (status != null && !status.isBlank() && !Set.of("PENDING_PAYMENT", "PAID", "SHIPPED", "COMPLETED", "CANCELED").contains(status)) {
+            throw new BusinessException("ORDER_STATUS_INVALID", "不支持的订单状态");
+        }
     }
 }
