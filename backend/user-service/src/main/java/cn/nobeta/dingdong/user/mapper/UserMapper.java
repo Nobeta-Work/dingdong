@@ -38,4 +38,7 @@ public interface UserMapper {
 
     @Update("update mall_user set nickname=#{nickname}, phone=#{phone}, email=#{email}, avatar_url=#{avatarUrl} where id=#{id} and deleted=0")
     int updateProfile(MallUser user);
+
+    @Update("update mall_user set password_hash=#{passwordHash}, updated_at=current_timestamp where id=#{id} and deleted=0")
+    int updatePassword(@Param("id") Long id, @Param("passwordHash") String passwordHash);
 }

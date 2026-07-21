@@ -22,4 +22,7 @@ public final class AuthRequests {
                                  @Pattern(regexp = "^$|^1\\d{10}$", message = "手机号格式不正确") String phone,
                                  @jakarta.validation.constraints.Email(message = "邮箱格式不正确") String email,
                                  @Size(max = 512) String avatarUrl) { }
+    public record ChangePasswordRequest(
+            @NotBlank String currentPassword,
+            @NotBlank @Size(min = 8, max = 72, message = "新密码长度应为 8-72 位") String newPassword) { }
 }

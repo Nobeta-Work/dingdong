@@ -21,14 +21,20 @@ spring:
 server:
   port: ${SERVER_PORT:8082}
 
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
 dubbo:
   application:
     name: ${spring.application.name}
   protocol:
     name: tri
     port: -1
+    serialization: fastjson2
   registry:
     address: nacos://${NACOS_SERVER_ADDR:127.0.0.1:8848}
+    register-mode: interface
 
 management:
   endpoints:

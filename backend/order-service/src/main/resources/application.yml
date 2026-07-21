@@ -21,14 +21,20 @@ spring:
 server:
   port: ${SERVER_PORT:8083}
 
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
 dubbo:
   application:
     name: ${spring.application.name}
   protocol:
     name: tri
     port: -1
+    serialization: fastjson2
   registry:
     address: nacos://${NACOS_SERVER_ADDR:127.0.0.1:8848}
+    register-mode: interface
 
 management:
   endpoints:
@@ -51,6 +57,8 @@ security:
 
 rocketmq:
   name-server: ${ROCKETMQ_NAMESRV_ADDR:127.0.0.1:9876}
+  producer:
+    group: ${ROCKETMQ_ORDER_PRODUCER_GROUP:order-producer}
   consumer:
     group: ${ROCKETMQ_ORDER_CONSUMER_GROUP:order-payment-consumer}
 

@@ -80,10 +80,10 @@ public interface OrderMapper {
       """)
     long countAdmin(@Param("orderNo") String orderNo,@Param("userId") Long userId,@Param("status") String status);
 
-    @Select("select count(1) from mall_order where created_at &gt;= current_date")
+    @Select("select count(1) from mall_order where created_at >= current_date")
     long countTodayOrders();
 
-    @Select("select coalesce(sum(total_amount),0) from mall_order where created_at &gt;= current_date and status in ('PAID','SHIPPED','COMPLETED')")
+    @Select("select coalesce(sum(total_amount),0) from mall_order where created_at >= current_date and status in ('PAID','SHIPPED','COMPLETED')")
     java.math.BigDecimal sumTodayPaidAmount();
 
     @Select("select count(1) from mall_order where status='PAID'")

@@ -31,6 +31,7 @@
 		<spring-cloud-alibaba.version>2025.0.0.0</spring-cloud-alibaba.version>
 		<mybatis.version>3.0.5</mybatis.version>
 		<dubbo.version>3.3.0</dubbo.version>
+		<fastjson.version>1.2.83</fastjson.version>
 		<rocketmq-spring.version>2.3.2</rocketmq-spring.version>
 	</properties>
 	<dependencyManagement>
@@ -55,6 +56,11 @@
 				<groupId>org.mybatis.spring.boot</groupId>
 				<artifactId>mybatis-spring-boot-starter</artifactId>
 				<version>${mybatis.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.alibaba</groupId>
+				<artifactId>fastjson</artifactId>
+				<version>${fastjson.version}</version>
 			</dependency>
 
 		</dependencies>

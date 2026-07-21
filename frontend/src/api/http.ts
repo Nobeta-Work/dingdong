@@ -23,7 +23,10 @@ http.interceptors.response.use(
   },
   (error) => {
     const message = error.response?.data?.message || error.message || '网络连接失败，请稍后重试'
-    if (error.response?.status === 401) localStorage.removeItem('dingdong_token')
+    if (error.response?.status === 401) {
+      localStorage.removeItem('dingdong_token')
+      localStorage.removeItem('dingdong_user')
+    }
     ElMessage.error(message)
     return Promise.reject(error)
   },

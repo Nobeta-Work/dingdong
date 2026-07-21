@@ -17,4 +17,6 @@ public class UserController {
     public ApiResponse<UserResponses.UserProfile> profile() { return ApiResponse.success(UserResponses.UserProfile.from(userService.profile(CurrentUserContext.require().id()))); }
     @PutMapping
     public ApiResponse<UserResponses.UserProfile> update(@Valid @RequestBody AuthRequests.ProfileRequest request) { return ApiResponse.success(UserResponses.UserProfile.from(userService.updateProfile(CurrentUserContext.require().id(), request))); }
+    @PutMapping("/password")
+    public ApiResponse<Void> changePassword(@Valid @RequestBody AuthRequests.ChangePasswordRequest request) { userService.changePassword(CurrentUserContext.require().id(), request); return ApiResponse.success(null); }
 }
