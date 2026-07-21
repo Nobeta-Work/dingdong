@@ -6,6 +6,21 @@ spring:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
       discovery:
         enabled: ${NACOS_ENABLED:true}
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns:
+              - ${CORS_ALLOWED_ORIGIN_LOCALHOST:http://localhost:*}
+              - ${CORS_ALLOWED_ORIGIN_LOOPBACK:http://127.0.0.1:*}
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowed-headers: "*"
+            allow-credentials: true
 
 server:
   port: ${SERVER_PORT:8080}
