@@ -1,8 +1,20 @@
 package cn.nobeta.dingdong.product.domain;
+
+/**
+ * 商品品牌实体类
+ */
 public class Brand {
-    private Long id; private String name; 
-    private String logoUrl; private Integer sortOrder; 
+    /** 品牌主键ID */
+    private Long id; 
+    /** 品牌名称 */
+    private String name; 
+    /** 品牌logo图片访问地址 */
+    private String logoUrl; 
+    /** 排序序号，数值越小展示优先级越高 */
+    private Integer sortOrder; 
+    /** 品牌状态：1正常启用，0禁用 */
     private Integer status;
+
     public Long getId() { return id; }
      public void setId(Long id) { this.id = id; }
     public String getName() { return name; } 

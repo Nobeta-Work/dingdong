@@ -21,10 +21,10 @@ public interface BrandMapper {
     List<Brand> findAll();
 
     /**
-     * 查询已启用状态、未逻辑删除的品牌
-     * 筛选条件：deleted=0 且 启用状态status=1
+     * 查询已上架状态、未逻辑删除的品牌
+     * 筛选条件：deleted=0 且 上架状态status=1
      * 排序规则：先按sort_order，再按id
-     * @return 可用启用品牌列表
+     * @return 上架未删除品牌列表
      */
     @Select("select id,name,logo_url,sort_order,status from product_brand where deleted=0 and status=1 order by sort_order,id")
     List<Brand> findEnabled();

@@ -13,7 +13,7 @@ import java.util.List;
 public interface ProductMapper {
 
     /**
-     * 根据主键ID查询单条SPU完整信息（包含已下架商品，逻辑未删除）
+     * 根据主键ID查询单条SPU完整信息（逻辑未删除）
      * @param id SPU主键id
      * @return 商品SPU实体
      */
