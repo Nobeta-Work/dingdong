@@ -73,20 +73,18 @@ public class PayJwtFilter extends OncePerRequestFilter {
             deny(r);
             return;
         }
+        Map<String, Object> x;
         try {
             // ③ 去掉 "Bearer " 前缀（7 个字符），调用 parse() 解析校验 token
-            Map<String, Object> x = parse(h.substring(7));
-            // ④ 认证通过，从 token 中提取用户 ID 和角色，构建 CurrentPayUser 存入上下文
-            PayUserContext.set(new CurrentPayUser(((Number) x.get("sub")).longValue(), (String) x.get("role")));
-            // ⑤ 放行请求
-            c.doFilter(q, r);
+            x = parse(h.substring(7));
         } catch (Exception e) {
             // ⑥ 认证失败（签名不一致 / 过期 / 格式错误等），返回 401
             deny(r);
-        } finally {
-            // ⑦ 请求处理完毕，清理 ThreadLocal 防止内存泄漏和线程复用串扰
-            PayUserContext.clear();
+            return;
         }
+        PayUserContext.set(new CurrentPayUser(((Number) x.get("sub")).longValue(), (String) x.get("role")));
+        try { c.doFilter(q, r); }
+        finally { PayUserContext.clear(); }
     }
 
     /**

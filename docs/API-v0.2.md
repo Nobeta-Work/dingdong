@@ -6,7 +6,7 @@ tags:
   - project/ding-dong
   - api/contract
 status: implemented
-updated: 2026-07-16
+updated: 2026-07-22
 related:
   - "[[PRD|产品需求文档]]"
   - "[[TEAM|开发迭代说明]]"
@@ -25,6 +25,7 @@ related:
 | POST | `/api/auth/login` | 用户名密码登录，返回 JWT |
 | GET | `/api/users/me` | 获取当前用户资料 |
 | PUT | `/api/users/me` | 更新昵称、手机号、邮箱、头像 |
+| PUT | `/api/users/me/password` | 校验当前密码后修改密码 |
 
 ### 注册
 
@@ -59,6 +60,21 @@ POST /api/auth/login
 
 > [!warning] 演示账号
 > `admin / password` 只存在于首次本地数据库初始化。公网或共享环境必须在部署时替换。
+
+### 修改密码
+
+```json
+PUT /api/users/me/password
+{
+  "currentPassword": "Passw0rd!",
+  "newPassword": "NewPassw0rd!"
+}
+```
+
+- 新密码长度为 8–72 位；
+- 当前密码不正确时拒绝修改；
+- 新密码不得与当前密码相同；
+- 修改成功后客户端应清除 JWT，并要求用户重新登录。
 
 ## 2. 收货地址
 
@@ -151,6 +167,8 @@ POST /api/auth/login
 | `AUTH_TOKEN_INVALID` / `AUTH_TOKEN_EXPIRED` | 令牌无效或过期 |
 | `AUTH_FORBIDDEN` | 非管理员访问管理端 |
 | `USER_USERNAME_EXISTS` / `USER_PHONE_EXISTS` / `USER_EMAIL_EXISTS` | 注册或资料唯一性冲突 |
+| `USER_PASSWORD_INCORRECT` | 修改密码时当前密码不正确 |
+| `USER_PASSWORD_UNCHANGED` | 新密码与当前密码相同 |
 | `USER_ADDRESS_NOT_FOUND` | 地址不属于当前用户或已删除 |
 | `PRODUCT_CATEGORY_NOT_FOUND` / `PRODUCT_BRAND_NOT_FOUND` | 商品关联分类或品牌不存在 |
 | `PRODUCT_SPU_NOT_FOUND` / `PRODUCT_SKU_NOT_FOUND` | 商品或 SKU 不存在、不可售 |

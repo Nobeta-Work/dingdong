@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;import static org.mockito.Argum
 class ProductInventoryFacadeImplTest {
 	/** 测试正常锁定：返回价格快照与剩余可用库存 */
 	@Test void locksStockAndReturnsSnapshot() {
-		ProductMapper mapper=mock(ProductMapper.class);InventorySkuView sku=sku();when(mapper.findInventorySku(1L)).thenReturn(sku);when(mapper.countActiveLock("DD1",1L)).thenReturn(0);when(mapper.lockStock(1L,2)).thenReturn(1);
+		ProductMapper mapper=mock(ProductMapper.class);InventorySkuView sku=sku();when(mapper.findInventorySkuForUpdate(1L)).thenReturn(sku);when(mapper.countActiveLock("DD1",1L)).thenReturn(0);when(mapper.lockStock(1L,2)).thenReturn(1);
 		var result=new ProductInventoryFacadeImpl(mapper).lockInventory("DD1",List.of(new LockItem(1L,2)));
 		// 验证：返回的快照价格与数据库一致（99.90）
 		assertEquals(new BigDecimal("99.90"),result.getFirst().price());
@@ -26,7 +26,7 @@ class ProductInventoryFacadeImplTest {
 	}
 	/** 测试库存不足：抛出异常且不插入锁定记录 */
 	@Test void rejectsInsufficientStockWithoutCreatingLock() {
-		ProductMapper mapper=mock(ProductMapper.class);when(mapper.findInventorySku(1L)).thenReturn(sku());when(mapper.countActiveLock("DD1",1L)).thenReturn(0);when(mapper.lockStock(1L,20)).thenReturn(0);
+		ProductMapper mapper=mock(ProductMapper.class);when(mapper.findInventorySkuForUpdate(1L)).thenReturn(sku());when(mapper.countActiveLock("DD1",1L)).thenReturn(0);when(mapper.lockStock(1L,20)).thenReturn(0);
 		BusinessException error=assertThrows(BusinessException.class,()->new ProductInventoryFacadeImpl(mapper).lockInventory("DD1",List.of(new LockItem(1L,20))));
 		// 验证：库存不足异常码
 		assertEquals("INVENTORY_INSUFFICIENT",error.getCode());
@@ -34,5 +34,5 @@ class ProductInventoryFacadeImplTest {
 		verify(mapper,never()).insertInventoryLock(anyString(),anyLong(),anyInt());
 	}
 	/** 构造测试用的在售 SKU 视图（价格 99.90，可用库存 10） */
-	private InventorySkuView sku(){InventorySkuView s=new InventorySkuView();s.setSkuId(1L);s.setSkuCode("DEMO-SKU");s.setTitle("演示商品");s.setSpecJson("{}");s.setPrice(new BigDecimal("99.90"));s.setAvailableStock(10);s.setStatus(1);return s;}
+	private InventorySkuView sku(){InventorySkuView s=new InventorySkuView();s.setSkuId(1L);s.setSkuCode("DEMO-SKU");s.setTitle("演示商品");s.setSpecJson("{}");s.setPrice(new BigDecimal("99.90"));s.setAvailableStock(10);s.setLockedStock(0);s.setSales(0);s.setStatus(1);return s;}
 }

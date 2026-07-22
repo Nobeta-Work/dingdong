@@ -60,12 +60,19 @@ public class OrderService {
      */
     @Transactional
     public MallOrder create(Long userId, CreateOrderRequest request) {
+        String orderNo = nextOrderNo();
+        String requestId = request.requestId();
+        if (requestId != null && !requestId.isBlank() && orderMapper.claimOrderRequest(userId, requestId, orderNo) == 0) {
+            String existingNo = orderMapper.findOrderNoByRequest(userId, requestId);
+            MallOrder existing = existingNo == null ? null : orderMapper.findOwned(existingNo, userId);
+            if (existing != null) return existing;
+            throw new BusinessException("ORDER_REQUEST_PROCESSING", "相同下单请求正在处理中，请稍后查询");
+        }
         // 1. 从购物车获取待结算商品
         List<CartItem> carts = cartService.itemsForOrder(userId, request.cartItemIds());
         // 2. 获取地址快照：这里直接拿下单时刻的收货信息，避免后续用户修改地址影响历史订单展示
         var address = addressFacade.getAddressSnapshot(userId, request.addressId());
         // 3. 生成订单号（格式：DD + yyyyMMddHHmmssSSS + 3位随机数）
-        String orderNo = nextOrderNo();
         boolean locked = false;
         try {
             // 4. 准备锁定库存的请求参数
@@ -157,26 +164,6 @@ public class OrderService {
 
     /** 统计当前用户订单总数 */
     public long count(Long userId) { return orderMapper.countByUserId(userId); }
-
-    public List<MallOrder> adminPage(String orderNo, Long userId, String status, int page, int size) {
-        validateStatus(status);
-        return orderMapper.findAdminPage(orderNo, userId, status, size, (page - 1) * size);
-    }
-
-    public long countAdmin(String orderNo, Long userId, String status) {
-        validateStatus(status);
-        return orderMapper.countAdmin(orderNo, userId, status);
-    }
-
-    public cn.nobeta.dingdong.order.api.OrderResponses.DashboardOverview dashboardOverview() {
-        return new cn.nobeta.dingdong.order.api.OrderResponses.DashboardOverview(
-                orderMapper.countTodayOrders(),
-                orderMapper.sumTodayPaidAmount(),
-                orderMapper.countPendingShipment(),
-                orderMapper.findTopProducts(10).stream()
-                        .map(cn.nobeta.dingdong.order.api.OrderResponses.TopProductResponse::from)
-                        .toList());
-    }
 
     public List<MallOrder> adminPage(String orderNo, Long userId, String status, int page, int size) {
         validateStatus(status);

@@ -16,6 +16,9 @@ import AuthPage from './pages/AuthPage.vue'
 import AddressPage from './pages/AddressPage.vue'
 import AccountSecurity from './pages/AccountSecurity.vue'
 import AdminCatalog from './pages/AdminCatalog.vue'
+import AdminUsers from './pages/AdminUsers.vue'
+import AdminSeckill from './pages/AdminSeckill.vue'
+import SeckillPage from './pages/SeckillPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -25,8 +28,9 @@ const router = createRouter({
       { path: 'cart', component: CartPage, meta: { requiresAuth: true } }, { path: 'checkout', component: CheckoutPage, meta: { requiresAuth: true } }, { path: 'payment', component: PaymentPage, meta: { requiresAuth: true } },
       { path: 'orders', component: OrdersPage, meta: { requiresAuth: true } }, { path: 'profile', component: ProfilePage, meta: { requiresAuth: true } },
       { path: 'addresses', component: AddressPage, meta: { requiresAuth: true } }, { path: 'account', component: AccountSecurity, meta: { requiresAuth: true } },
+      { path: 'seckill', component: SeckillPage },
     ] },
-    { path: '/admin', component: AdminLayout, meta: { requiresAdmin: true }, children: [{ path: '', component: AdminDashboard }, { path: 'products', component: AdminProducts }, { path: 'catalog', component: AdminCatalog }, { path: 'orders', component: AdminOrders }] },
+    { path: '/admin', component: AdminLayout, meta: { requiresAdmin: true }, children: [{ path: '', component: AdminDashboard }, { path: 'products', component: AdminProducts }, { path: 'catalog', component: AdminCatalog }, { path: 'orders', component: AdminOrders }, { path: 'users', component: AdminUsers }, { path: 'seckill', component: AdminSeckill }] },
     { path: '/auth', component: AuthPage },
   ],
   scrollBehavior: () => ({ top: 0 }),

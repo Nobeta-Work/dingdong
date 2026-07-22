@@ -95,8 +95,11 @@ public interface ProductMapper {
      * @param skuId SKU主键ID
      * @return 库存业务聚合视图对象
      */
-    @Select("select k.id as sku_id,k.sku_code,s.title,s.main_image_url,k.spec_json,k.price,k.available_stock,k.status from product_sku k join product_spu s on s.id=k.spu_id where k.id=#{skuId} and k.deleted=0 and s.deleted=0")
+    @Select("select k.id as sku_id,k.sku_code,s.title,s.main_image_url,k.spec_json,k.price,k.available_stock,k.locked_stock,k.sales,k.status from product_sku k join product_spu s on s.id=k.spu_id where k.id=#{skuId} and k.deleted=0 and s.deleted=0")
     InventorySkuView findInventorySku(Long skuId);
+
+    @Select("select k.id as sku_id,k.sku_code,s.title,s.main_image_url,k.spec_json,k.price,k.available_stock,k.locked_stock,k.sales,k.status from product_sku k join product_spu s on s.id=k.spu_id where k.id=#{skuId} and k.deleted=0 and s.deleted=0 for update")
+    InventorySkuView findInventorySkuForUpdate(Long skuId);
 
     /**
      * 订单下单锁定库存（乐观锁机制，version版本号自增）
@@ -171,6 +174,36 @@ public interface ProductMapper {
      */
     @Update("update inventory_lock set status='CONFIRMED', released_at=current_timestamp where order_no=#{orderNo} and status='LOCKED'")
     int confirmLocks(String orderNo);
+
+    @Select("select count(1) from inventory_change_log where business_key=#{businessKey}")
+    int countInventoryChange(String businessKey);
+
+    @Insert("""
+      insert into inventory_change_log(sku_id,business_key,business_type,reference_no,change_available,change_locked,change_sales,
+      before_available,after_available,before_locked,after_locked,before_sales,after_sales,remark)
+      values(#{skuId},#{businessKey},#{businessType},#{referenceNo},#{changeAvailable},#{changeLocked},#{changeSales},
+      #{beforeAvailable},#{afterAvailable},#{beforeLocked},#{afterLocked},#{beforeSales},#{afterSales},#{remark})
+      """)
+    int insertInventoryChange(InventoryChangeLog log);
+
+    @Select("""
+      <script>select id,sku_id,business_key,business_type,reference_no,change_available,change_locked,change_sales,
+      before_available,after_available,before_locked,after_locked,before_sales,after_sales,remark,created_at
+      from inventory_change_log where 1=1
+      <if test='skuId != null'>and sku_id=#{skuId}</if><if test='businessType != null and !businessType.isBlank()'>and business_type=#{businessType}</if>
+      order by id desc limit #{size} offset #{offset}</script>
+      """)
+    List<InventoryChangeLog> findInventoryChanges(@Param("skuId") Long skuId, @Param("businessType") String businessType,
+                                                   @Param("offset") int offset, @Param("size") int size);
+
+    @Select("<script>select count(1) from inventory_change_log where 1=1 <if test='skuId != null'>and sku_id=#{skuId}</if><if test='businessType != null and !businessType.isBlank()'>and business_type=#{businessType}</if></script>")
+    long countInventoryChanges(@Param("skuId") Long skuId, @Param("businessType") String businessType);
+
+    @Update("update product_sku set available_stock=available_stock+#{delta},version=version+1 where id=#{skuId} and deleted=0 and available_stock+#{delta} >= 0")
+    int adjustAvailableStock(@Param("skuId") Long skuId, @Param("delta") Integer delta);
+
+    @Update("update product_sku set available_stock=available_stock-1,sales=sales+1,version=version+1 where id=#{skuId} and deleted=0 and status=1 and available_stock&gt;0")
+    int confirmSeckillStock(Long skuId);
 
     /**
      * 前台商品多条件分页检索查询

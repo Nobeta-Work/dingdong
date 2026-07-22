@@ -54,7 +54,10 @@ public class AdminJwtFilter extends OncePerRequestFilter {
      */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getServletPath().startsWith("/api/admin/");
+        String path = request.getServletPath();
+        boolean seckillProtected = ("POST".equals(request.getMethod()) && path.matches("/api/seckill/activities/[^/]+/orders"))
+                || path.startsWith("/api/seckill/orders/");
+        return !path.startsWith("/api/admin/") && !seckillProtected;
     }
 
     /**
@@ -75,20 +78,21 @@ public class AdminJwtFilter extends OncePerRequestFilter {
             reject(response, "AUTH_UNAUTHORIZED", "请先登录");
             return;
         }
+        Map<String, Object> claims;
         try {
             // ③ 去掉 "Bearer " 前缀（7 个字符），调用 parse() 解析校验 token
-            Map<String, Object> claims = parse(authorization.substring(7));
-            // ④ 额外检查角色是否为 ADMIN（管理后台专用）
-            if (!"ADMIN".equals(claims.get("role"))) {
-                reject(response, "AUTH_FORBIDDEN", "需要管理员权限");
-                return;
-            }
-            // ⑤ 认证通过 + 角色校验通过，放行请求
-            chain.doFilter(request, response);
+            claims = parse(authorization.substring(7));
         } catch (Exception exception) {
             // ⑥ 认证失败（签名不一致 / 过期 / 格式错误），返回 401
             reject(response, "AUTH_TOKEN_INVALID", "无效或已过期的登录令牌");
+            return;
         }
+        if (request.getServletPath().startsWith("/api/admin/") && !"ADMIN".equals(claims.get("role"))) {
+            reject(response, "AUTH_FORBIDDEN", "需要管理员权限");
+            return;
+        }
+        ProductUserContext.set(new CurrentProductUser(((Number) claims.get("sub")).longValue(), String.valueOf(claims.get("role"))));
+        try { chain.doFilter(request, response); } finally { ProductUserContext.clear(); }
     }
 
     /**

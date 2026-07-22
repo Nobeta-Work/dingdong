@@ -2,6 +2,7 @@ package cn.nobeta.dingdong.user.mapper;
 
 import cn.nobeta.dingdong.user.domain.MallUser;
 import org.apache.ibatis.annotations.*;
+import java.util.List;
 
 @Mapper
 public interface UserMapper {
@@ -50,4 +51,26 @@ public interface UserMapper {
 
     @Update("update mall_user set password_hash=#{passwordHash}, updated_at=current_timestamp where id=#{id} and deleted=0")
     int updatePassword(@Param("id") Long id, @Param("passwordHash") String passwordHash);
+
+    @Select("""
+        <script>select id, username, password_hash, nickname, phone, email, avatar_url, role, status, created_at, updated_at
+        from mall_user where deleted=0
+        <if test='keyword != null and !keyword.isBlank()'>and (username like concat('%',#{keyword},'%') or nickname like concat('%',#{keyword},'%') or phone like concat('%',#{keyword},'%') or email like concat('%',#{keyword},'%'))</if>
+        <if test='role != null and !role.isBlank()'>and role=#{role}</if>
+        <if test='status != null'>and status=#{status}</if>
+        order by id desc limit #{size} offset #{offset}</script>
+        """)
+    List<MallUser> findAdminPage(@Param("keyword") String keyword, @Param("role") String role,
+                                 @Param("status") Integer status, @Param("offset") int offset, @Param("size") int size);
+
+    @Select("""
+        <script>select count(1) from mall_user where deleted=0
+        <if test='keyword != null and !keyword.isBlank()'>and (username like concat('%',#{keyword},'%') or nickname like concat('%',#{keyword},'%') or phone like concat('%',#{keyword},'%') or email like concat('%',#{keyword},'%'))</if>
+        <if test='role != null and !role.isBlank()'>and role=#{role}</if>
+        <if test='status != null'>and status=#{status}</if></script>
+        """)
+    long countAdminPage(@Param("keyword") String keyword, @Param("role") String role, @Param("status") Integer status);
+
+    @Update("update mall_user set status=#{status}, updated_at=current_timestamp where id=#{id} and deleted=0")
+    int updateStatus(@Param("id") Long id, @Param("status") Integer status);
 }

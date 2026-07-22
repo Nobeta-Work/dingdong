@@ -3,6 +3,7 @@ package cn.nobeta.dingdong.product.rpc;
 import cn.nobeta.dingdong.common.exception.BusinessException;
 import cn.nobeta.dingdong.common.rpc.ProductInventoryFacade;
 import cn.nobeta.dingdong.product.domain.InventoryLockRecord;
+import cn.nobeta.dingdong.product.domain.InventoryChangeLog;
 import cn.nobeta.dingdong.product.domain.InventorySkuView;
 import cn.nobeta.dingdong.product.mapper.ProductMapper;
 import org.apache.dubbo.config.annotation.DubboService;
@@ -45,16 +46,19 @@ public class ProductInventoryFacadeImpl implements ProductInventoryFacade {
             // 基础参数校验：SKU 和数量必须同时有效，且数量必须大于 0。
             if (item.skuId() == null || item.quantity() == null || item.quantity() <= 0) throw new BusinessException("INVENTORY_INVALID_QUANTITY", "商品数量不合法");
             // 先读取数据库中的 SKU 视图，后续无论锁定成功与否都用它返回服务端权威价格。
-            InventorySkuView sku = requireSaleableSku(item.skuId());
+            InventorySkuView sku = requireSaleableSkuForUpdate(item.skuId());
             // 幂等防重：同一订单同一 SKU 只允许锁定一次，重复请求直接跳过库存扣减。
-            if (productMapper.countActiveLock(orderNo, item.skuId()) == 0) {
+            boolean newlyLocked = productMapper.countActiveLock(orderNo, item.skuId()) == 0;
+            if (newlyLocked) {
                 // 通过乐观锁扣减可用库存，失败说明当前库存不足或状态不满足在售条件。
                 if (productMapper.lockStock(item.skuId(), item.quantity()) == 0) throw new BusinessException("INVENTORY_INSUFFICIENT", "商品库存不足：" + sku.getTitle());
                 // 写入锁定流水，后续取消/支付确认都依赖这条订单级别的锁定记录。
                 productMapper.insertInventoryLock(orderNo, item.skuId(), item.quantity());
+                recordChange(sku, "ORDER_LOCK:" + orderNo + ":" + item.skuId(), "ORDER_LOCK", orderNo,
+                        -item.quantity(), item.quantity(), 0, "订单锁定库存");
             }
             // 无论是否命中幂等分支，都返回同一份快照给订单服务用于金额计算。
-            snapshots.add(snapshot(sku, item.quantity()));
+            snapshots.add(snapshot(sku, newlyLocked ? item.quantity() : 0));
         }
         return snapshots;
     }
@@ -69,7 +73,12 @@ public class ProductInventoryFacadeImpl implements ProductInventoryFacade {
         // 先读取仍处于 LOCKED 状态的库存明细，再逐条回滚可用库存。
         List<InventoryLockRecord> locks = productMapper.findActiveLocks(orderNo);
         for (InventoryLockRecord lock : locks) {
-            productMapper.unlockStock(lock.getSkuId(), lock.getQuantity());
+            InventorySkuView sku = requireSkuForUpdate(lock.getSkuId());
+            String key = "ORDER_RELEASE:" + orderNo + ":" + lock.getSkuId();
+            if (productMapper.countInventoryChange(key) == 0) {
+                if (productMapper.unlockStock(lock.getSkuId(), lock.getQuantity()) == 0) throw new BusinessException("INVENTORY_RELEASE_FAILED", "库存释放失败");
+                recordChange(sku, key, "ORDER_RELEASE", orderNo, lock.getQuantity(), -lock.getQuantity(), 0, "订单取消或超时释放");
+            }
         }
         // 库存回滚完成后，再把锁定流水统一标记为已释放，避免重复释放。
         productMapper.releaseLocks(orderNo);
@@ -85,10 +94,14 @@ public class ProductInventoryFacadeImpl implements ProductInventoryFacade {
         // 只确认仍处于 LOCKED 状态的库存记录，避免对已处理的订单重复核销。
         List<InventoryLockRecord> locks = productMapper.findActiveLocks(orderNo);
         for (InventoryLockRecord lock : locks) {
+            InventorySkuView sku = requireSkuForUpdate(lock.getSkuId());
+            String key = "ORDER_CONFIRM:" + orderNo + ":" + lock.getSkuId();
+            if (productMapper.countInventoryChange(key) > 0) continue;
             // 将锁定库存转为销量；任意一条失败都说明数据状态异常，需要回滚。
             if (productMapper.confirmStock(lock.getSkuId(), lock.getQuantity()) == 0) {
                 throw new BusinessException("INVENTORY_CONFIRM_FAILED", "库存锁定记录异常");
             }
+            recordChange(sku, key, "ORDER_CONFIRM", orderNo, 0, -lock.getQuantity(), lock.getQuantity(), "支付成功核销锁定库存");
         }
         // 库存核销成功后，再统一把流水状态改为 CONFIRMED。
         productMapper.confirmLocks(orderNo);
@@ -122,6 +135,29 @@ public class ProductInventoryFacadeImpl implements ProductInventoryFacade {
         InventorySkuView sku = productMapper.findInventorySku(skuId);
         if (sku == null || !Integer.valueOf(1).equals(sku.getStatus())) throw new BusinessException("PRODUCT_SKU_NOT_FOUND", "SKU 不存在或已下架");
         return sku;
+    }
+
+    private InventorySkuView requireSaleableSkuForUpdate(Long skuId) {
+        InventorySkuView sku = requireSkuForUpdate(skuId);
+        if (!Integer.valueOf(1).equals(sku.getStatus())) throw new BusinessException("PRODUCT_SKU_NOT_FOUND", "SKU 不存在或已下架");
+        return sku;
+    }
+
+    private InventorySkuView requireSkuForUpdate(Long skuId) {
+        InventorySkuView sku = productMapper.findInventorySkuForUpdate(skuId);
+        if (sku == null) throw new BusinessException("PRODUCT_SKU_NOT_FOUND", "SKU 不存在");
+        return sku;
+    }
+
+    private void recordChange(InventorySkuView before, String key, String type, String referenceNo,
+                              int availableDelta, int lockedDelta, int salesDelta, String remark) {
+        InventoryChangeLog log = new InventoryChangeLog();
+        log.setSkuId(before.getSkuId()); log.setBusinessKey(key); log.setBusinessType(type); log.setReferenceNo(referenceNo);
+        log.setChangeAvailable(availableDelta); log.setChangeLocked(lockedDelta); log.setChangeSales(salesDelta);
+        log.setBeforeAvailable(before.getAvailableStock()); log.setAfterAvailable(before.getAvailableStock() + availableDelta);
+        log.setBeforeLocked(before.getLockedStock()); log.setAfterLocked(before.getLockedStock() + lockedDelta);
+        log.setBeforeSales(before.getSales()); log.setAfterSales(before.getSales() + salesDelta); log.setRemark(remark);
+        productMapper.insertInventoryChange(log);
     }
 
     /**

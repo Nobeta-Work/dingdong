@@ -15,6 +15,9 @@ export type AdminOrder = Order & { userId: number }
 export type TopProduct = { skuId: number; productTitle: string; productImageUrl?: string; quantity: number; salesAmount: number }
 export type DashboardOverview = { todayOrderCount: number; todayPaidAmount: number; pendingShipmentCount: number; topProducts: TopProduct[] }
 export type User = { id: number; username: string; nickname?: string; phone?: string; email?: string; avatarUrl?: string; role?: 'USER' | 'ADMIN' }
+export type AdminUser = User & { status: number; createdAt?: string; updatedAt?: string }
+export type SeckillActivity = { id: number; name: string; skuId: number; seckillPrice: number; totalStock: number; availableStock: number; status: 'DRAFT' | 'ACTIVE' | 'ENDED'; startTime: string; endTime: string }
+export type SeckillConsistency = { activityId: number; initialStock: number; redisStock: number; databaseStock: number; successfulOrders: number; pendingMessages: number; consistent: boolean }
 
 const data = <T>(promise: Promise<{ data: { data: T } }>) => promise.then((response) => response.data.data)
 
@@ -55,7 +58,7 @@ export const addressApi = {
 }
 
 export const orderApi = {
-  create: (payload: { addressId: number; cartItemIds?: number[] }) => data<Order>(http.post('/orders', payload)),
+  create: (payload: { addressId: number; cartItemIds?: number[]; requestId?: string }) => data<Order>(http.post('/orders', { requestId: crypto.randomUUID(), ...payload })),
   list: (params: { page: number; size: number }) => data<ApiPage<Order>>(http.get('/orders', { params })),
   detail: (orderNo: string) => data<Order>(http.get(`/orders/${orderNo}`)),
   cancel: (orderNo: string) => data<Order>(http.post(`/orders/${orderNo}/cancel`)),
@@ -65,6 +68,13 @@ export const orderApi = {
 export const paymentApi = {
   create: (orderNo: string) => data<{ paymentNo: string; amount: number; status: string }>(http.post('/payments', { orderNo })),
   simulate: (paymentNo: string, success: boolean) => data<void>(http.post(`/payments/${paymentNo}/simulate`, { success })),
+  detail: (paymentNo: string) => data<{ paymentNo: string; orderNo: string; amount: number; status: string }>(http.get(`/payments/${paymentNo}`)),
+}
+
+export const seckillApi = {
+  activities: () => data<SeckillActivity[]>(http.get('/seckill/activities')),
+  purchase: (activityId: number, requestId = crypto.randomUUID()) => data<{ requestId: string; status: string; remainingStock: number }>(http.post(`/seckill/activities/${activityId}/orders`, { requestId })),
+  result: (requestId: string) => data<{ requestId: string; status: string; orderId?: number }>(http.get(`/seckill/orders/${requestId}`)),
 }
 
 export const adminApi = {
@@ -84,4 +94,13 @@ export const adminApi = {
   orders: (params: Record<string, unknown>) => data<ApiPage<AdminOrder>>(http.get('/admin/orders', { params })),
   order: (orderNo: string) => data<AdminOrder>(http.get(`/admin/orders/${orderNo}`)),
   ship: (orderNo: string, payload: { carrier: string; trackingNo: string }) => data<AdminOrder>(http.post(`/admin/orders/${orderNo}/shipment`, payload)),
+  users: (params: Record<string, unknown>) => data<{ items: AdminUser[]; total: number; page: number; size: number }>(http.get('/admin/users', { params })),
+  user: (id: number) => data<AdminUser>(http.get(`/admin/users/${id}`)),
+  changeUserStatus: (id: number, status: number) => data<AdminUser>(http.put(`/admin/users/${id}/status`, { status })),
+  seckillActivities: () => data<SeckillActivity[]>(http.get('/admin/seckill/activities')),
+  createSeckill: (payload: Record<string, unknown>) => data<SeckillActivity>(http.post('/admin/seckill/activities', payload)),
+  activateSeckill: (id: number) => data<SeckillActivity>(http.post(`/admin/seckill/activities/${id}/activate`)),
+  warmupSeckill: (id: number) => data<void>(http.post(`/admin/seckill/activities/${id}/warmup`)),
+  endSeckill: (id: number) => data<SeckillActivity>(http.post(`/admin/seckill/activities/${id}/end`)),
+  seckillConsistency: (id: number) => data<SeckillConsistency>(http.get(`/admin/seckill/activities/${id}/consistency`)),
 }

@@ -76,6 +76,7 @@ public class JwtGatewayFilter implements GlobalFilter, Ordered {
     private boolean isPublic(ServerWebExchange e) {
         String p = e.getRequest().getPath().value();
         if (p.startsWith("/actuator/") || p.startsWith("/api/auth/")) return true;
+        if (e.getRequest().getMethod() == HttpMethod.GET && p.startsWith("/api/seckill/activities")) return true;
         return e.getRequest().getMethod() == HttpMethod.GET
                 && (p.equals("/api/categories") || p.equals("/api/brands") || p.startsWith("/api/products"));
     }

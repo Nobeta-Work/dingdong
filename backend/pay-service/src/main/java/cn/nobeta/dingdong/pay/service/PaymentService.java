@@ -27,11 +27,14 @@ public class PaymentService {
     @Transactional
     public PaymentOrder create(Long userId, String orderNo) {
         PaymentOrder existing = mapper.findByOrder(orderNo, userId);
-        if (existing != null) return existing;
+        if (existing != null) {
+            if ("FAILED".equals(existing.getStatus())) mapper.reopenFailed(existing.getPaymentNo());
+            return mapper.findByOrder(orderNo, userId);
+        }
         var order = orderFacade.getPayableOrder(orderNo, userId);
         PaymentOrder payment = new PaymentOrder();
         payment.setPaymentNo(nextNo()); payment.setOrderNo(order.orderNo()); payment.setUserId(userId); payment.setAmount(order.amount()); payment.setChannel(channel.code()); payment.setStatus("PENDING");
-        mapper.insert(payment);
+        if (mapper.insert(payment) == 0) return mapper.findByOrder(orderNo, userId);
         return mapper.findOwned(payment.getPaymentNo(), userId);
     }
 

@@ -10,6 +10,12 @@ import java.util.List;
 @Mapper
 public interface OrderMapper {
 
+    @Insert("insert ignore into order_request(user_id,request_id,order_no) values(#{userId},#{requestId},#{orderNo})")
+    int claimOrderRequest(@Param("userId") Long userId,@Param("requestId") String requestId,@Param("orderNo") String orderNo);
+
+    @Select("select order_no from order_request where user_id=#{userId} and request_id=#{requestId}")
+    String findOrderNoByRequest(@Param("userId") Long userId,@Param("requestId") String requestId);
+
     /**
      * 插入订单主表记录
      * @param order 订单实体（插入后返回生成的主键 ID）

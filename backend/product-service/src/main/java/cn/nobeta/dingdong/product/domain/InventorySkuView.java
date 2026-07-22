@@ -23,6 +23,8 @@ public class InventorySkuView {
     private BigDecimal price;
     /** 可用库存 */
     private Integer availableStock;
+    private Integer lockedStock;
+    private Integer sales;
     /** 状态：0-下架，1-上架 */
     private Integer status;
     
@@ -102,6 +104,10 @@ public class InventorySkuView {
      * @param availableStock 剩余可售库存
      */
     public void setAvailableStock(Integer availableStock) { this.availableStock = availableStock; }
+    public Integer getLockedStock() { return lockedStock; }
+    public void setLockedStock(Integer lockedStock) { this.lockedStock = lockedStock; }
+    public Integer getSales() { return sales; }
+    public void setSales(Integer sales) { this.sales = sales; }
     
     /**
      * 获取商品上下架状态

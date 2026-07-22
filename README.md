@@ -77,6 +77,12 @@ Get-Content -Raw infra/mysql/init/06-test-data.sql | docker compose exec -T mysq
 
 脚本可重复执行；如需完全重置本地数据，请先删除 Compose 数据卷后再启动中间件。
 
+从 v0.5 保留数据卷升级到 v0.6 时，先执行幂等增量结构：
+
+```powershell
+Get-Content -Raw infra/mysql/init/07-v0.6-schema.sql | docker compose exec -T mysql mysql -udingdong -pdingdong_dev
+```
+
 ### 2. 构建后端
 
 ```powershell
@@ -182,4 +188,6 @@ mvn -pl gateway-service spring-boot:run
 [v0.4 支付与履约接口契约](docs/API-v0.4.md)
 
 [v0.5 可靠性说明](docs/API-v0.5.md)
+
+[v0.6 并发与秒杀接口](docs/API-v0.6.md)
 

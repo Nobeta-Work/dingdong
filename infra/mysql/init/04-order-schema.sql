@@ -16,3 +16,8 @@ CREATE TABLE IF NOT EXISTS order_item (
  id BIGINT NOT NULL AUTO_INCREMENT,order_id BIGINT NOT NULL,sku_id BIGINT NOT NULL,sku_code VARCHAR(64) NOT NULL,product_title VARCHAR(128) NOT NULL,product_image_url VARCHAR(512) NULL,spec_json VARCHAR(1000) NOT NULL,unit_price DECIMAL(12,2) NOT NULL,quantity INT NOT NULL,total_amount DECIMAL(12,2) NOT NULL,
  PRIMARY KEY(id),KEY idx_order_item_order(order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS order_request (
+ id BIGINT NOT NULL AUTO_INCREMENT,user_id BIGINT NOT NULL,request_id VARCHAR(64) NOT NULL,order_no VARCHAR(32) NOT NULL,
+ created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ PRIMARY KEY(id),UNIQUE KEY uk_order_request_user(user_id,request_id),UNIQUE KEY uk_order_request_no(order_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

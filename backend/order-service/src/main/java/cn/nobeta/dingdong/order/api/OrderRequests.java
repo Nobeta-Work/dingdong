@@ -20,7 +20,9 @@ public final class OrderRequests { private OrderRequests(){}
      * @param addressId  收件地址 ID（对应 user_address 表）
      * @param cartItemIds 待结算的购物车项 ID 列表；为 {@code null} 或空列表时结算当前用户所有已选中商品
      */
-    public record CreateOrderRequest(@NotNull Long addressId,List<Long> cartItemIds){ }
+    public record CreateOrderRequest(@NotNull Long addressId,List<Long> cartItemIds,@Size(max=64) String requestId){
+        public CreateOrderRequest(Long addressId,List<Long> cartItemIds){this(addressId,cartItemIds,null);}
+    }
 
     /** 管理员发货请求 */
     public record ShipmentRequest(@NotBlank @Size(max=64) String carrier,@NotBlank @Size(max=64) String trackingNo){ }
