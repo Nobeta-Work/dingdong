@@ -8,12 +8,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriUtils;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Base64;
@@ -25,21 +29,30 @@ import java.util.UUID;
 @Service
 public class GitHubImageBedService {
 
+    private static final long MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
     private final GitHubImageBedProperties properties;
     private final ObjectMapper objectMapper;
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final HttpClient httpClient;
 
     public GitHubImageBedService(GitHubImageBedProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+        this.httpClient = buildHttpClient(properties.sslTrustStoreType());
     }
 
     public UploadResult upload(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException("FILE_EMPTY", "请选择要上传的图片文件");
         }
-        if (properties.repo() == null || properties.repo().isBlank()) {
-            throw new BusinessException("FILE_UPLOAD_CONFIG", "GitHub 图床仓库未配置");
+        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+            throw new BusinessException("FILE_TYPE_INVALID", "仅支持上传图片文件");
+        }
+        if (file.getSize() > MAX_IMAGE_SIZE) {
+            throw new BusinessException("FILE_TOO_LARGE", "图片大小不能超过 5MB");
+        }
+        if (properties.repo() == null || !properties.repo().matches("[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")) {
+            throw new BusinessException("FILE_UPLOAD_CONFIG", "GitHub 图床仓库应配置为 owner/repository");
         }
         if (properties.token() == null || properties.token().isBlank()) {
             throw new BusinessException("FILE_UPLOAD_CONFIG", "GitHub 图床访问令牌未配置");
@@ -54,6 +67,7 @@ public class GitHubImageBedService {
                 .header("Authorization", "Bearer " + properties.token())
                 .header("Accept", "application/vnd.github+json")
                 .header("X-GitHub-Api-Version", "2022-11-28")
+                .header("User-Agent", "dingdong-product-service")
                 .header("Content-Type", "application/json")
                 .PUT(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
@@ -61,7 +75,7 @@ public class GitHubImageBedService {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                return new UploadResult(buildRawUrl(path), path);
+                return new UploadResult(buildPublicUrl(path), path);
             }
             throw new BusinessException("FILE_UPLOAD_FAILED", extractMessage(response.body()));
         } catch (InterruptedException exception) {
@@ -124,8 +138,34 @@ public class GitHubImageBedService {
         }
     }
 
-    private String buildRawUrl(String path) {
-        return properties.rawBaseUrl() + "/" + properties.repo() + "/" + properties.branch() + "/" + encodePath(path);
+    private String buildPublicUrl(String path) {
+        return properties.cdnBaseUrl()
+                + "/" + properties.repo()
+                + "@" + UriUtils.encodePathSegment(properties.branch(), StandardCharsets.UTF_8)
+                + "/" + encodePath(path);
+    }
+
+    /**
+     * 开发环境使用 Windows 系统根证书库，以兼容企业代理或本机已安装的证书链。
+     * 未配置时仍使用 JVM 默认信任库；任何情况下都不会绕过 HTTPS 证书校验。
+     */
+    private HttpClient buildHttpClient(String trustStoreType) {
+        if (trustStoreType == null || trustStoreType.isBlank()) {
+            return HttpClient.newBuilder().build();
+        }
+        try {
+            KeyStore trustStore = KeyStore.getInstance(trustStoreType);
+            trustStore.load(null, null);
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+                    TrustManagerFactory.getDefaultAlgorithm());
+            trustManagerFactory.init(trustStore);
+
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+            return HttpClient.newBuilder().sslContext(sslContext).build();
+        } catch (GeneralSecurityException | IOException exception) {
+            throw new IllegalStateException("无法加载 HTTPS 信任库：" + trustStoreType, exception);
+        }
     }
 
     private String encodePath(String path) {

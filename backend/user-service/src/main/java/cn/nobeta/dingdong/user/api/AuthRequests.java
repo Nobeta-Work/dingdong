@@ -34,7 +34,8 @@ public final class AuthRequests {
     public record ProfileRequest(@NotBlank @Size(max = 32) String nickname,
                                  @Pattern(regexp = "^$|^1\\d{10}$", message = "手机号格式不正确") String phone,
                                  @jakarta.validation.constraints.Email(message = "邮箱格式不正确") String email,
-                                 @Size(max = 512) String avatarUrl) { }
+                                 @Size(max = 512) String avatarUrl,
+                                 String smsCode) { }
 
     public record SendSmsCodeRequest(
             @NotBlank @Pattern(regexp = "^1\\d{10}$", message = "手机号格式不正确") String phone,

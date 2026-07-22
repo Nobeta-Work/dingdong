@@ -18,17 +18,28 @@ export type User = { id: number; username: string; nickname?: string; phone?: st
 export type AdminUser = User & { status: number; createdAt?: string; updatedAt?: string }
 export type SeckillActivity = { id: number; name: string; skuId: number; seckillPrice: number; totalStock: number; availableStock: number; status: 'DRAFT' | 'ACTIVE' | 'ENDED'; startTime: string; endTime: string }
 export type SeckillConsistency = { activityId: number; initialStock: number; redisStock: number; databaseStock: number; successfulOrders: number; pendingMessages: number; consistent: boolean }
+export type SmsCodeResult = { mock: boolean; debugCode: string; expireSeconds: number; retryAfterSeconds: number }
 
 const data = <T>(promise: Promise<{ data: { data: T } }>) => promise.then((response) => response.data.data)
 
 export const authApi = {
   login: (payload: { username: string; password: string }) => data<{ token: string; expiresIn: number; user: User }>(http.post('/auth/login', payload)),
   register: (payload: { username: string; password: string; nickname?: string; phone?: string; email?: string }) => data<User>(http.post('/auth/register', payload)),
+  sendSmsCode: (phone: string, scene: 'login' | 'register' | 'change-phone') => data<SmsCodeResult>(http.post('/auth/sms/code', { phone, scene })),
+  smsLogin: (phone: string, code: string) => data<{ token: string; expiresIn: number; user: User }>(http.post('/auth/sms/login', { phone, code })),
   /** 查询当前登录用户的个人资料 → GET /api/users/me */
   me: () => data<User>(http.get('/users/me')),
   /** 修改当前登录用户的个人资料 → PUT /api/users/me，payload 为要修改的字段（昵称必填，其余可选） */
-  updateMe: (payload: Partial<User>) => data<User>(http.put('/users/me', payload)),
+  updateMe: (payload: Partial<User> & { smsCode?: string }) => data<User>(http.put('/users/me', payload)),
   changePassword: (payload: { currentPassword: string; newPassword: string }) => data<void>(http.put('/users/me/password', payload)),
+}
+
+export const fileApi = {
+  uploadImage: (file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return data<{ url: string; path: string }>(http.post('/files/images', body, { timeout: 30_000 }))
+  },
 }
 
 export const catalogApi = {

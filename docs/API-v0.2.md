@@ -23,8 +23,10 @@ related:
 |---|---|---|
 | POST | `/api/auth/register` | 注册普通用户 |
 | POST | `/api/auth/login` | 用户名密码登录，返回 JWT |
+| POST | `/api/auth/sms/code` | 获取 Mock 短信验证码；支持 `login`、`register`、`change-phone` 场景 |
+| POST | `/api/auth/sms/login` | 手机号和验证码登录，首次登录自动创建用户 |
 | GET | `/api/users/me` | 获取当前用户资料 |
-| PUT | `/api/users/me` | 更新昵称、手机号、邮箱、头像 |
+| PUT | `/api/users/me` | 更新昵称、手机号、邮箱、头像；手机号变化时校验验证码 |
 | PUT | `/api/users/me/password` | 校验当前密码后修改密码 |
 
 ### 注册
@@ -60,6 +62,34 @@ POST /api/auth/login
 
 > [!warning] 演示账号
 > `admin / password` 只存在于首次本地数据库初始化。公网或共享环境必须在部署时替换。
+
+### Mock 短信验证码
+
+```json
+POST /api/auth/sms/code
+{"phone":"13800138000","scene":"login"}
+```
+
+```json
+{
+  "code": "OK",
+  "data": {
+    "mock": true,
+    "debugCode": "381927",
+    "expireSeconds": 300,
+    "retryAfterSeconds": 60
+  }
+}
+```
+
+第三方短信签名与模板资质尚未通过，当前验证码仍写入 Redis 并执行过期、频控和一次性消费，但会在 Mock 响应中直接返回给前端。真实短信渠道接入后必须移除 `debugCode`。
+
+手机号换绑时，先以 `scene=change-phone` 获取验证码，再提交：
+
+```json
+PUT /api/users/me
+{"nickname":"叮咚用户","phone":"13900139000","email":"buyer@example.com","avatarUrl":null,"smsCode":"381927"}
+```
 
 ### 修改密码
 
@@ -124,6 +154,7 @@ PUT /api/users/me/password
 | GET/POST/PUT | `/api/admin/brands`、`/api/admin/brands/{id}` | 品牌查询、新建、修改 |
 | POST/GET/PUT | `/api/admin/products`、`/api/admin/products/{id}` | SPU 新建、查看、修改 |
 | POST/PUT | `/api/admin/products/{spuId}/skus`、`/api/admin/products/{spuId}/skus/{id}` | SKU 新建、修改 |
+| POST | `/api/files` | ADMIN 上传不超过 5MB 的图片到 GitHub 图床，返回公开 URL |
 
 ### 分类与品牌请求
 
@@ -169,6 +200,8 @@ PUT /api/users/me/password
 | `USER_USERNAME_EXISTS` / `USER_PHONE_EXISTS` / `USER_EMAIL_EXISTS` | 注册或资料唯一性冲突 |
 | `USER_PASSWORD_INCORRECT` | 修改密码时当前密码不正确 |
 | `USER_PASSWORD_UNCHANGED` | 新密码与当前密码相同 |
+| `SMS_CODE_INVALID` / `SMS_RATE_LIMITED` / `SMS_SCENE_INVALID` | 验证码错误、发送过频或场景不受支持 |
+| `FILE_UPLOAD_CONFIG` / `FILE_UPLOAD_FAILED` | GitHub 图床未配置或上传失败 |
 | `USER_ADDRESS_NOT_FOUND` | 地址不属于当前用户或已删除 |
 | `PRODUCT_CATEGORY_NOT_FOUND` / `PRODUCT_BRAND_NOT_FOUND` | 商品关联分类或品牌不存在 |
 | `PRODUCT_SPU_NOT_FOUND` / `PRODUCT_SKU_NOT_FOUND` | 商品或 SKU 不存在、不可售 |

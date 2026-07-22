@@ -202,7 +202,7 @@ public interface ProductMapper {
     @Update("update product_sku set available_stock=available_stock+#{delta},version=version+1 where id=#{skuId} and deleted=0 and available_stock+#{delta} >= 0")
     int adjustAvailableStock(@Param("skuId") Long skuId, @Param("delta") Integer delta);
 
-    @Update("update product_sku set available_stock=available_stock-1,sales=sales+1,version=version+1 where id=#{skuId} and deleted=0 and status=1 and available_stock&gt;0")
+    @Update("update product_sku set available_stock=available_stock-1,sales=sales+1,version=version+1 where id=#{skuId} and deleted=0 and status=1 and available_stock>0")
     int confirmSeckillStock(Long skuId);
 
     /**

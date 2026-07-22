@@ -8,8 +8,6 @@ import cn.nobeta.dingdong.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 /**
  * 认证控制器 —— 用户登录功能链路入口
  * 所有 /api/auth/** 请求经 Gateway 路由到此处（此路径为公开接口，无需 token）
@@ -53,9 +51,8 @@ public class AuthController {
     }
 
     @PostMapping("/sms/code")
-    public ApiResponse<Map<String, Object>> sendSmsCode(@Valid @RequestBody AuthRequests.SendSmsCodeRequest request) {
-        smsService.sendCode(request.phone(), request.scene());
-        return ApiResponse.success(Map.of("expireSeconds", 300, "retryAfterSeconds", 60));
+    public ApiResponse<SmsService.SendCodeResult> sendSmsCode(@Valid @RequestBody AuthRequests.SendSmsCodeRequest request) {
+        return ApiResponse.success(smsService.sendCode(request.phone(), request.scene()));
     }
 
     @PostMapping("/sms/login")

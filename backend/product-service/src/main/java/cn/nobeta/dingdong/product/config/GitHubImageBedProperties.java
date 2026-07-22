@@ -5,13 +5,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * GitHub 图床上传配置。
  */
-@ConfigurationProperties(prefix = "dingdong.image-bed.github")
+@ConfigurationProperties(prefix = "github")
 public record GitHubImageBedProperties(
         String repo,
         String token,
         String branch,
         String folder,
-        String rawBaseUrl) {
+        String cdnBaseUrl,
+        String sslTrustStoreType) {
 
     public String branch() {
         return branch == null || branch.isBlank() ? "main" : branch;
@@ -21,7 +22,15 @@ public record GitHubImageBedProperties(
         return folder == null || folder.isBlank() ? "product-images" : folder;
     }
 
-    public String rawBaseUrl() {
-        return rawBaseUrl == null || rawBaseUrl.isBlank() ? "https://raw.githubusercontent.com" : rawBaseUrl;
+    public String cdnBaseUrl() {
+        return cdnBaseUrl == null || cdnBaseUrl.isBlank() ? "https://cdn.jsdelivr.net/gh" : stripTrailingSlash(cdnBaseUrl);
+    }
+
+    public String sslTrustStoreType() {
+        return sslTrustStoreType == null ? "" : sslTrustStoreType.trim();
+    }
+
+    private String stripTrailingSlash(String value) {
+        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 }

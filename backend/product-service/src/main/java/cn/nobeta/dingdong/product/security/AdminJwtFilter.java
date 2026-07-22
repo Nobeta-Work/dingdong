@@ -139,7 +139,9 @@ public class AdminJwtFilter extends OncePerRequestFilter {
 
     /** 返回 401 或 403 的 JSON 错误响应 */
     private void reject(HttpServletResponse response, String code, String message) throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setStatus("AUTH_FORBIDDEN".equals(code)
+                ? HttpServletResponse.SC_FORBIDDEN
+                : HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getWriter(), new ErrorBody(code, message));
     }

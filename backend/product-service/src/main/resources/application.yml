@@ -62,11 +62,10 @@ rocketmq:
   producer:
     group: dingdong-product-producer
 
-dingdong:
-  image-bed:
-    github:
-      repo: ${GITHUB_IMAGE_BED_REPO:-}
-      token: ${GITHUB_IMAGE_BED_TOKEN:${github.token}}
-      branch: ${GITHUB_IMAGE_BED_BRANCH:main}
-      folder: ${GITHUB_IMAGE_BED_FOLDER:product-images}
-      raw-base-url: ${GITHUB_IMAGE_BED_RAW_BASE_URL:https://raw.githubusercontent.com}
+github:
+  repo: ${GITHUB_IMAGE_BED_REPO:Y-tan-max/-}
+  token: ${GITHUB_IMAGE_BED_TOKEN:-}
+  branch: ${GITHUB_IMAGE_BED_BRANCH:main}
+  folder: ${GITHUB_IMAGE_BED_FOLDER:product-images}
+  cdn-base-url: ${GITHUB_IMAGE_BED_CDN_BASE_URL:https://cdn.jsdelivr.net/gh}
+  ssl-trust-store-type: ${GITHUB_IMAGE_BED_SSL_TRUST_STORE_TYPE:}

@@ -23,7 +23,7 @@ public class FileController {
         this.imageBedService = imageBedService;
     }
 
-    @PostMapping(value = "/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = {"/files/images", "/files"}, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<FileUploadResponse> upload(@RequestPart("file") MultipartFile file) {
         UploadResult result = imageBedService.upload(file);
         return ApiResponse.success(new FileUploadResponse(result.url(), result.path()));

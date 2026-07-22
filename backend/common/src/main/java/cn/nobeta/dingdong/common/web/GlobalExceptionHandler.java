@@ -24,7 +24,8 @@ public class GlobalExceptionHandler {
     /** 处理业务异常（含价格校验链中的库存不足、SKU 不可售等） */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException exception) {
-        return ResponseEntity.badRequest().body(ApiResponse.failure(exception.getCode(), exception.getMessage()));
+        return ResponseEntity.status(resolveStatus(exception.getCode()))
+                .body(ApiResponse.failure(exception.getCode(), exception.getMessage()));
     }
 
     /**
@@ -48,5 +49,25 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception exception) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.failure("SYSTEM_ERROR", "系统繁忙，请稍后重试"));
+    }
+
+    private HttpStatus resolveStatus(String code) {
+        if (code.startsWith("AUTH_FORBIDDEN") || code.endsWith("_FORBIDDEN") || code.endsWith("_PROTECTED")) {
+            return HttpStatus.FORBIDDEN;
+        }
+        if (code.startsWith("AUTH_")) return HttpStatus.UNAUTHORIZED;
+        if (code.endsWith("_NOT_FOUND")) return HttpStatus.NOT_FOUND;
+        if ("FILE_TOO_LARGE".equals(code)) return HttpStatus.PAYLOAD_TOO_LARGE;
+        if ("FILE_TYPE_INVALID".equals(code)) return HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+        if ("FILE_UPLOAD_FAILED".equals(code)) return HttpStatus.BAD_GATEWAY;
+        if (code.endsWith("_UNAVAILABLE") || "FILE_UPLOAD_CONFIG".equals(code)) {
+            return HttpStatus.SERVICE_UNAVAILABLE;
+        }
+        if (code.contains("DUPLICATE") || code.endsWith("_EXISTS") || code.endsWith("_SOLD_OUT")
+                || code.endsWith("_STATUS_INVALID") || code.endsWith("_PROCESSING")
+                || code.endsWith("_MESSAGES_PENDING")) {
+            return HttpStatus.CONFLICT;
+        }
+        return HttpStatus.BAD_REQUEST;
     }
 }

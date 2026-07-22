@@ -63,6 +63,19 @@ docker compose ps
 
 启动 Java 服务时，`JWT_SECRET` 必须在 Gateway、用户服务与商品服务保持一致；当前默认值仅适用于本地开发。
 
+商品图片与品牌 Logo 通过 GitHub Contents API 上传到图床仓库。启动 `product-service` 前，需要在当前终端设置：
+
+```powershell
+$env:GITHUB_IMAGE_BED_REPO="owner/image-bed-repository"
+$env:GITHUB_IMAGE_BED_TOKEN="github-token-with-contents-write-permission"
+$env:GITHUB_IMAGE_BED_BRANCH="main"
+$env:GITHUB_IMAGE_BED_FOLDER="product-images"
+```
+
+Token 只授予目标仓库的 Contents 读写权限，禁止写入仓库配置或提交到 Git。未配置时，商品与品牌仍可手工填写公开图片 URL，但上传接口会明确返回配置错误。
+
+短信验证码当前采用 Mock 模式：第三方短信签名与模板资质尚未通过，验证码仍写入 Redis 并执行 5 分钟过期、60 秒频控，同时由接口返回给前端用于登录和手机号换绑演示。真实支付与真实快递查询均不接入，支付成功和物流发货使用明确标注的模拟流程。
+
 ### 测试数据
 
 `infra/mysql/init/06-test-data.sql` 会在 **首次创建 MySQL 数据卷** 时自动执行。它会生成 30 个上架商品与 SKU、演示用户和地址、购物车，以及覆盖待支付、已支付、已发货、已完成、已取消状态的订单、库存锁定和支付数据。

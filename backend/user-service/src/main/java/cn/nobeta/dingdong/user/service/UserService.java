@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Random;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -168,6 +169,12 @@ public class UserService {
         // ② 处理可选字段：空白字符串统一转为 null（避免空字符串违反唯一索引约束）
         String phone = blankToNull(request.phone());
         String email = blankToNull(request.email());
+        if (!Objects.equals(phone, current.getPhone())) {
+            if (phone == null) throw new BusinessException("USER_PHONE_REQUIRED", "手机号不能为空");
+            if (!smsService.verifyCode(phone, "change-phone", blankToNull(request.smsCode()))) {
+                throw new BusinessException("SMS_CODE_INVALID", "验证码错误或已过期");
+            }
+        }
         // ③ 手机号唯一性校验：仅当手机号有值且与当前值不同时才查库
         if (phone != null && !phone.equals(current.getPhone()) && userMapper.countByPhone(phone) > 0) throw new BusinessException("USER_PHONE_EXISTS", "手机号已被使用");
         // ④ 邮箱唯一性校验：仅当邮箱有值且与当前值不同时才查库
