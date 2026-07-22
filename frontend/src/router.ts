@@ -1,24 +1,25 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import StoreLayout from './layouts/StoreLayout.vue'
 import AdminLayout from './layouts/AdminLayout.vue'
-import HomePage from './pages/HomePage.vue'
-import ProductsPage from './pages/ProductsPage.vue'
-import ProductPage from './pages/ProductPage.vue'
-import CartPage from './pages/CartPage.vue'
-import CheckoutPage from './pages/CheckoutPage.vue'
-import PaymentPage from './pages/PaymentPage.vue'
-import OrdersPage from './pages/OrdersPage.vue'
-import ProfilePage from './pages/ProfilePage.vue'
-import AdminDashboard from './pages/AdminDashboard.vue'
-import AdminProducts from './pages/AdminProducts.vue'
-import AdminOrders from './pages/AdminOrders.vue'
-import AuthPage from './pages/AuthPage.vue'
-import AddressPage from './pages/AddressPage.vue'
-import AccountSecurity from './pages/AccountSecurity.vue'
-import AdminCatalog from './pages/AdminCatalog.vue'
-import AdminUsers from './pages/AdminUsers.vue'
-import AdminSeckill from './pages/AdminSeckill.vue'
-import SeckillPage from './pages/SeckillPage.vue'
+
+const HomePage = () => import('./pages/HomePage.vue')
+const ProductsPage = () => import('./pages/ProductsPage.vue')
+const ProductPage = () => import('./pages/ProductPage.vue')
+const CartPage = () => import('./pages/CartPage.vue')
+const CheckoutPage = () => import('./pages/CheckoutPage.vue')
+const PaymentPage = () => import('./pages/PaymentPage.vue')
+const OrdersPage = () => import('./pages/OrdersPage.vue')
+const ProfilePage = () => import('./pages/ProfilePage.vue')
+const AdminDashboard = () => import('./pages/AdminDashboard.vue')
+const AdminProducts = () => import('./pages/AdminProducts.vue')
+const AdminOrders = () => import('./pages/AdminOrders.vue')
+const AuthPage = () => import('./pages/AuthPage.vue')
+const AddressPage = () => import('./pages/AddressPage.vue')
+const AccountSecurity = () => import('./pages/AccountSecurity.vue')
+const AdminCatalog = () => import('./pages/AdminCatalog.vue')
+const AdminUsers = () => import('./pages/AdminUsers.vue')
+const AdminSeckill = () => import('./pages/AdminSeckill.vue')
+const SeckillPage = () => import('./pages/SeckillPage.vue')
 
 const router = createRouter({
   history: createWebHistory(),
