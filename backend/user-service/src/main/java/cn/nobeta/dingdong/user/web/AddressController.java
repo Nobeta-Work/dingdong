@@ -3,6 +3,7 @@ package cn.nobeta.dingdong.user.web;
 import cn.nobeta.dingdong.common.api.ApiResponse;
 import cn.nobeta.dingdong.user.api.AddressRequest;
 import cn.nobeta.dingdong.user.api.UserResponses.AddressResponse;
+import cn.nobeta.dingdong.user.domain.UserAddress;
 import cn.nobeta.dingdong.user.security.CurrentUserContext;
 import cn.nobeta.dingdong.user.service.AddressService;
 import jakarta.validation.Valid;
@@ -18,15 +19,27 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/addresses")
 public class AddressController {
+
     private final AddressService addressService;
-    public AddressController(AddressService addressService) { this.addressService = addressService; }
+
+    public AddressController(AddressService addressService) {
+        this.addressService = addressService;
+    }
 
     /**
      * 查询收货地址列表 —— 返回当前用户所有未删除的收货地址
      * 按默认地址优先、最近创建优先排序
      * 对应前端 addressApi.list() → GET /api/addresses
      */
-    @GetMapping public ApiResponse<List<AddressResponse>> list() { return ApiResponse.success(addressService.list(CurrentUserContext.require().id()).stream().map(AddressResponse::from).toList()); }
+    @GetMapping
+    public ApiResponse<List<AddressResponse>> list() {
+        Long userId = CurrentUserContext.require().id();
+        List<UserAddress> addressList = addressService.list(userId);
+        List<AddressResponse> responseList = addressList.stream()
+                .map(AddressResponse::from)
+                .toList();
+        return ApiResponse.success(responseList);
+    }
 
     /**
      * 新增收货地址 —— 为当前用户创建一条新的收货地址记录
@@ -34,19 +47,37 @@ public class AddressController {
      * 返回 HTTP 201 状态码
      * 对应前端 addressApi.create() → POST /api/addresses
      */
-    @PostMapping @ResponseStatus(HttpStatus.CREATED) public ApiResponse<AddressResponse> create(@Valid @RequestBody AddressRequest request) { return ApiResponse.success(AddressResponse.from(addressService.create(CurrentUserContext.require().id(), request))); }
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<AddressResponse> create(@Valid @RequestBody AddressRequest request) {
+        Long userId = CurrentUserContext.require().id();
+        UserAddress saved = addressService.create(userId, request);
+        return ApiResponse.success(AddressResponse.from(saved));
+    }
 
     /**
      * 修改收货地址 —— 更新指定 ID 的收货地址信息
      * 先校验地址归属（防止跨用户操作），若设为默认则先清除旧默认标记
      * 对应前端 addressApi.update() → PUT /api/addresses/{id}
      */
-    @PutMapping("/{id}") public ApiResponse<AddressResponse> update(@PathVariable Long id, @Valid @RequestBody AddressRequest request) { return ApiResponse.success(AddressResponse.from(addressService.update(CurrentUserContext.require().id(), id, request))); }
+    @PutMapping("/{id}")
+    public ApiResponse<AddressResponse> update(@PathVariable Long id,
+                                               @Valid @RequestBody AddressRequest request) {
+        Long userId = CurrentUserContext.require().id();
+        UserAddress updated = addressService.update(userId, id, request);
+        return ApiResponse.success(AddressResponse.from(updated));
+    }
 
     /**
      * 删除收货地址 —— 逻辑删除指定 ID 的地址记录（deleted=1）
      * 先校验地址归属，属于当前用户方可删除
      * 对应前端 addressApi.remove() → DELETE /api/addresses/{id}
      */
-    @DeleteMapping("/{id}") public ApiResponse<Void> delete(@PathVariable Long id) { addressService.delete(CurrentUserContext.require().id(), id); return ApiResponse.success(null); }
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        Long userId = CurrentUserContext.require().id();
+        addressService.delete(userId, id);
+        return ApiResponse.success(null);
+    }
+
 }

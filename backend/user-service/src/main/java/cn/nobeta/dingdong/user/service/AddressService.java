@@ -14,8 +14,12 @@ import java.util.List;
  */
 @Service
 public class AddressService {
+
     private final AddressMapper addressMapper;
-    public AddressService(AddressMapper addressMapper) { this.addressMapper = addressMapper; }
+
+    public AddressService(AddressMapper addressMapper) {
+        this.addressMapper = addressMapper;
+    }
 
     /**
      * 查询收货地址列表 —— 返回当前用户所有未删除的地址
@@ -23,7 +27,9 @@ public class AddressService {
      * @param userId 当前用户 ID
      * @return 用户的所有有效收货地址列表
      */
-    public List<UserAddress> list(Long userId) { return addressMapper.findByUserId(userId); }
+    public List<UserAddress> list(Long userId) {
+        return addressMapper.findByUserId(userId);
+    }
 
     /**
      * 新增收货地址 —— 为指定用户创建一条新的收货地址记录
@@ -41,7 +47,9 @@ public class AddressService {
         // ① 将请求 DTO 转为领域实体（id 为 null，由数据库自增）
         UserAddress address = from(userId, null, request);
         // ② 若新地址设为默认，则先清除该用户已有默认地址的标记
-        if (request.defaultAddress()) addressMapper.clearDefault(userId);
+        if (request.defaultAddress()) {
+            addressMapper.clearDefault(userId);
+        }
         // ③ 执行 INSERT，MyBatis 自动回填自增主键
         addressMapper.insert(address);
         // ④ 回查数据库获取完整记录（含自增 ID、created_at 等）
@@ -64,9 +72,13 @@ public class AddressService {
     @Transactional
     public UserAddress update(Long userId, Long id, AddressRequest request) {
         // ① 校验地址归属：通过 id + userId 联合查询，防止跨用户越权操作
-        if (addressMapper.findOwned(id, userId) == null) throw new BusinessException("USER_ADDRESS_NOT_FOUND", "收货地址不存在");
+        if (addressMapper.findOwned(id, userId) == null) {
+            throw new BusinessException("USER_ADDRESS_NOT_FOUND", "收货地址不存在");
+        }
         // ② 若新设为默认地址，则先清除该用户已有默认标记
-        if (request.defaultAddress()) addressMapper.clearDefault(userId);
+        if (request.defaultAddress()) {
+            addressMapper.clearDefault(userId);
+        }
         // ③ 执行 UPDATE 落库
         addressMapper.update(from(userId, id, request));
         // ④ 回查获取更新后的完整记录
@@ -84,7 +96,10 @@ public class AddressService {
     @Transactional
     public void delete(Long userId, Long id) {
         // 执行逻辑删除（deleted=1），同时清除默认标记；影响行数为 0 表示地址不存在或不属于当前用户
-        if (addressMapper.deleteOwned(id, userId) == 0) throw new BusinessException("USER_ADDRESS_NOT_FOUND", "收货地址不存在");
+        int rows = addressMapper.deleteOwned(id, userId);
+        if (rows == 0) {
+            throw new BusinessException("USER_ADDRESS_NOT_FOUND", "收货地址不存在");
+        }
     }
 
     /**
@@ -96,9 +111,16 @@ public class AddressService {
      */
     private UserAddress from(Long userId, Long id, AddressRequest request) {
         UserAddress address = new UserAddress();
-        address.setId(id); address.setUserId(userId); address.setReceiverName(request.receiverName());
-        address.setReceiverPhone(request.receiverPhone()); address.setProvince(request.province()); address.setCity(request.city());
-        address.setDistrict(request.district()); address.setDetailAddress(request.detailAddress()); address.setDefaultAddress(request.defaultAddress());
+        address.setId(id);
+        address.setUserId(userId);
+        address.setReceiverName(request.receiverName());
+        address.setReceiverPhone(request.receiverPhone());
+        address.setProvince(request.province());
+        address.setCity(request.city());
+        address.setDistrict(request.district());
+        address.setDetailAddress(request.detailAddress());
+        address.setDefaultAddress(request.defaultAddress());
         return address;
     }
+
 }

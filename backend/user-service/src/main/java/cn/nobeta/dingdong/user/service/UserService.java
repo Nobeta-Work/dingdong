@@ -23,15 +23,17 @@ import java.util.UUID;
  */
 @Service
 public class UserService {
+
     private final UserMapper userMapper;
     private final JwtTokenService tokenService;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final SmsService smsService;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private static final Random RANDOM = new Random();
-    public UserService(UserMapper userMapper, JwtTokenService tokenService,SmsService smsService) {
+
+    public UserService(UserMapper userMapper, JwtTokenService tokenService, SmsService smsService) {
         this.userMapper = userMapper;
         this.tokenService = tokenService;
-        this.smsService=smsService;
+        this.smsService = smsService;
     }
 
     /**
@@ -43,27 +45,29 @@ public class UserService {
     public MallUser register(AuthRequests.RegisterRequest request) {
         String code = blankToNull(request.code());
         String phone = blankToNull(request.phone());
+
         if (code != null) {
-            if (phone == null) throw new BusinessException("USER_PHONE_REQUIRED", "验证码注册需要手机号");
-            if (!smsService.verifyCode(phone, "register", code))
+            if (phone == null) {
+                throw new BusinessException("USER_PHONE_REQUIRED", "验证码注册需要手机号");
+            }
+            if (!smsService.verifyCode(phone, "register", code)) {
                 throw new BusinessException("SMS_CODE_INVALID", "验证码错误或已过期");
+            }
         }
 
         if (code == null) {
-            // 校验用户名唯一性：若已存在同名未删除用户则抛出业务异常
-            if (blankToNull(request.username()) == null)
+            if (blankToNull(request.username()) == null) {
                 throw new BusinessException("USER_USERNAME_REQUIRED", "用户名不能为空");
-            if (userMapper.findByUsername(request.username()) != null)
+            }
+            if (userMapper.findByUsername(request.username()) != null) {
                 throw new BusinessException("USER_USERNAME_EXISTS", "用户名已存在");
+            }
         }
-        // ── 构造 MallUser ──
+
         MallUser user = new MallUser();
         user.setUsername(code != null && blankToNull(request.username()) == null
                 ? "user_" + phone.substring(phone.length() - 4) + "_" + RANDOM.nextInt(1000)
                 : request.username());
-        // 条件：验证码注册 且 用户没填用户名
-        // 真：自动生成 "user_1111_742"
-        // 假：用传进来的 username
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setNickname(request.nickname());
         user.setPhone(phone);
@@ -88,29 +92,30 @@ public class UserService {
      * @throws BusinessException 用户名不存在/密码错误 或 账号被禁用
      */
     public LoginResult login(AuthRequests.LoginRequest request) {
-        // ① 按用户名查询用户（查询条件包含 deleted=0，逻辑删除的用户不可登录）
         MallUser user = userMapper.findByUsername(request.username());
-        // ② 用户不存在 或 BCrypt 密码校验不通过 → 统一抛出"用户名或密码错误"（防止用户枚举攻击）
         if (user == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BusinessException("AUTH_LOGIN_FAILED", "用户名或密码错误");
         }
-        // ③ 检查账号状态：status=1 为正常，非 1 视为已禁用
-        if (!Integer.valueOf(1).equals(user.getStatus())) throw new BusinessException("AUTH_USER_DISABLED", "当前用户已被禁用");
-        // ④ 根据用户信息构建 CurrentUser，调用 JwtTokenService 签发 HS256 签名的 JWT
+        if (!Integer.valueOf(1).equals(user.getStatus())) {
+            throw new BusinessException("AUTH_USER_DISABLED", "当前用户已被禁用");
+        }
         String token = tokenService.create(new CurrentUser(user.getId(), user.getUsername(), user.getRole()));
-        // ⑤ 封装 LoginResult 返回：token、过期秒数、完整用户实体（由 Controller 层脱敏后返回前端）
         return new LoginResult(token, tokenService.getExpiresInSeconds(), user);
     }
 
     public LoginResult smsLogin(String phone, String code) {
-        if (!smsService.verifyCode(phone, "login", code))
+        if (!smsService.verifyCode(phone, "login", code)) {
             throw new BusinessException("SMS_CODE_INVALID", "验证码错误或已过期");
+        }
 
         MallUser user = userMapper.findByPhone(phone);
-        if (user == null) user = autoCreateByPhone(phone);
+        if (user == null) {
+            user = autoCreateByPhone(phone);
+        }
 
-        if (!Integer.valueOf(1).equals(user.getStatus()))
+        if (!Integer.valueOf(1).equals(user.getStatus())) {
             throw new BusinessException("AUTH_USER_DISABLED", "当前用户已被禁用");
+        }
 
         String token = tokenService.create(new CurrentUser(user.getId(), user.getUsername(), user.getRole()));
         return new LoginResult(token, tokenService.getExpiresInSeconds(), user);
@@ -142,10 +147,10 @@ public class UserService {
      * @throws BusinessException 用户不存在或已被禁用
      */
     public MallUser profile(Long userId) {
-        // ① 按主键查询未删除的用户
         MallUser user = userMapper.findById(userId);
-        // ② 用户不存在或状态非正常（status != 1）→ 登录状态无效
-        if (user == null || !Integer.valueOf(1).equals(user.getStatus())) throw new BusinessException("AUTH_UNAUTHORIZED", "登录状态无效");
+        if (user == null || !Integer.valueOf(1).equals(user.getStatus())) {
+            throw new BusinessException("AUTH_UNAUTHORIZED", "登录状态无效");
+        }
         return user;
     }
 
@@ -164,9 +169,7 @@ public class UserService {
      */
     @Transactional
     public MallUser updateProfile(Long userId, AuthRequests.ProfileRequest request) {
-        // ① 加载当前用户信息并校验状态
         MallUser current = profile(userId);
-        // ② 处理可选字段：空白字符串统一转为 null（避免空字符串违反唯一索引约束）
         String phone = blankToNull(request.phone());
         String email = blankToNull(request.email());
         if (!Objects.equals(phone, current.getPhone())) {
@@ -184,9 +187,7 @@ public class UserService {
         current.setPhone(phone);
         current.setEmail(email);
         current.setAvatarUrl(blankToNull(request.avatarUrl()));
-        // ⑥ 执行更新 SQL 持久化到数据库
         userMapper.updateProfile(current);
-        // ⑦ 回查数据库，返回更新后的完整用户信息
         return profile(userId);
     }
 
@@ -207,13 +208,22 @@ public class UserService {
      * 仅当字段非空时才查询数据库，若已有未删除用户占用则抛出业务异常
      */
     private void assertUniqueContact(String phone, String email) {
-        if (blankToNull(phone) != null && userMapper.countByPhone(phone) > 0) throw new BusinessException("USER_PHONE_EXISTS", "手机号已被使用");
-        if (blankToNull(email) != null && userMapper.countByEmail(email) > 0) throw new BusinessException("USER_EMAIL_EXISTS", "邮箱已被使用");
+        if (blankToNull(phone) != null && userMapper.countByPhone(phone) > 0) {
+            throw new BusinessException("USER_PHONE_EXISTS", "手机号已被使用");
+        }
+        if (blankToNull(email) != null && userMapper.countByEmail(email) > 0) {
+            throw new BusinessException("USER_EMAIL_EXISTS", "邮箱已被使用");
+        }
     }
+
     /**
      * 将空白字符串转为 null
      * 用于可选字段，避免空字符串入库导致唯一约束误判
      */
-    private String blankToNull(String value) { return value == null || value.isBlank() ? null : value; }
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
+    }
+
     public record LoginResult(String token, long expiresIn, MallUser user) { }
+
 }

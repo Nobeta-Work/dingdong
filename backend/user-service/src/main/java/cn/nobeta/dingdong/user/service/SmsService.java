@@ -62,7 +62,9 @@ public class SmsService {
     public boolean verifyCode(String phone, String scene, String code) {
         String key = "sms:code:" + scene + ":" + phone;
         String storedCode = redisTemplate.opsForValue().get(key);
-        if (storedCode == null) return false;
+        if (storedCode == null) {
+            return false;
+        }
         if (storedCode.equals(code)) {
             redisTemplate.delete(key);
             return true;
