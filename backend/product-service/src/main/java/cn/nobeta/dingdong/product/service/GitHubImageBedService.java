@@ -18,7 +18,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.UUID;
@@ -86,15 +85,9 @@ public class GitHubImageBedService {
         }
     }
 
-    private String buildPath(MultipartFile file) {
+    String buildPath(MultipartFile file) {
         String extension = resolveExtension(file);
-        LocalDate today = LocalDate.now();
-        return String.join("/",
-                properties.folder(),
-                String.valueOf(today.getYear()),
-                String.format("%02d", today.getMonthValue()),
-                String.format("%02d", today.getDayOfMonth()),
-                UUID.randomUUID().toString().replace("-", "") + extension);
+        return UUID.randomUUID().toString().replace("-", "") + extension;
     }
 
     private String resolveExtension(MultipartFile file) {
@@ -138,7 +131,7 @@ public class GitHubImageBedService {
         }
     }
 
-    private String buildPublicUrl(String path) {
+    String buildPublicUrl(String path) {
         return properties.cdnBaseUrl()
                 + "/" + properties.repo()
                 + "@" + UriUtils.encodePathSegment(properties.branch(), StandardCharsets.UTF_8)

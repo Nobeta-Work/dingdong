@@ -66,13 +66,11 @@ docker compose ps
 商品图片与品牌 Logo 通过 GitHub Contents API 上传到图床仓库。启动 `product-service` 前，需要在当前终端设置：
 
 ```powershell
-$env:GITHUB_IMAGE_BED_REPO="owner/image-bed-repository"
 $env:GITHUB_IMAGE_BED_TOKEN="github-token-with-contents-write-permission"
 $env:GITHUB_IMAGE_BED_BRANCH="main"
-$env:GITHUB_IMAGE_BED_FOLDER="product-images"
 ```
 
-Token 只授予目标仓库的 Contents 读写权限，禁止写入仓库配置或提交到 Git。未配置时，商品与品牌仍可手工填写公开图片 URL，但上传接口会明确返回配置错误。
+目标仓库固定为 `Y-tan-max/-`，上传文件直接写入仓库根目录；接口返回 jsDelivr CDN 地址。Token 只授予该仓库的 Contents 读写权限，禁止写入仓库配置或提交到 Git。未配置时，商品与品牌仍可手工填写公开图片 URL，但上传接口会明确返回配置错误。
 
 短信验证码当前采用 Mock 模式：第三方短信签名与模板资质尚未通过，验证码仍写入 Redis 并执行 5 分钟过期、60 秒频控，同时由接口返回给前端用于登录和手机号换绑演示。真实支付与真实快递查询均不接入，支付成功和物流发货使用明确标注的模拟流程。
 

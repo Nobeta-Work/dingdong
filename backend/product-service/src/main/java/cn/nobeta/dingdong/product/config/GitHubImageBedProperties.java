@@ -10,16 +10,11 @@ public record GitHubImageBedProperties(
         String repo,
         String token,
         String branch,
-        String folder,
         String cdnBaseUrl,
         String sslTrustStoreType) {
 
     public String branch() {
         return branch == null || branch.isBlank() ? "main" : branch;
-    }
-
-    public String folder() {
-        return folder == null || folder.isBlank() ? "product-images" : folder;
     }
 
     public String cdnBaseUrl() {
