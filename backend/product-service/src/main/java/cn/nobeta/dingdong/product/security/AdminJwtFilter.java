@@ -54,7 +54,8 @@ public class AdminJwtFilter extends OncePerRequestFilter {
      */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getServletPath().startsWith("/api/admin/");
+        String path = request.getServletPath();
+        return !(path.startsWith("/api/admin/") || path.startsWith("/api/files"));
     }
 
     /**
