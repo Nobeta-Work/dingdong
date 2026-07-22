@@ -10,6 +10,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Random;
+import java.util.UUID;
+
 /**
  * 用户服务 —— 用户注册、登录认证、个人资料查询与修改的业务逻辑核心
  * 负责用户注册、登录认证、个人信息管理。
@@ -22,10 +25,12 @@ public class UserService {
     private final UserMapper userMapper;
     private final JwtTokenService tokenService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-    public UserService(UserMapper userMapper, JwtTokenService tokenService) {
+    private final SmsService smsService;
+    private static final Random RANDOM = new Random();
+    public UserService(UserMapper userMapper, JwtTokenService tokenService,SmsService smsService) {
         this.userMapper = userMapper;
         this.tokenService = tokenService;
+        this.smsService=smsService;
     }
 
     /**
@@ -35,25 +40,37 @@ public class UserService {
      */
     @Transactional
     public MallUser register(AuthRequests.RegisterRequest request) {
-        // 校验用户名唯一性：若已存在同名未删除用户则抛出业务异常
-        if (userMapper.findByUsername(request.username()) != null) throw new BusinessException("USER_USERNAME_EXISTS", "用户名已存在");
-        // 校验手机号与邮箱唯一性（可选字段，仅非空时校验）
-        assertUniqueContact(request.phone(), request.email());
-        // 构建用户领域实体
+        String code = blankToNull(request.code());
+        String phone = blankToNull(request.phone());
+        if (code != null) {
+            if (phone == null) throw new BusinessException("USER_PHONE_REQUIRED", "验证码注册需要手机号");
+            if (!smsService.verifyCode(phone, "register", code))
+                throw new BusinessException("SMS_CODE_INVALID", "验证码错误或已过期");
+        }
+
+        if (code == null) {
+            // 校验用户名唯一性：若已存在同名未删除用户则抛出业务异常
+            if (blankToNull(request.username()) == null)
+                throw new BusinessException("USER_USERNAME_REQUIRED", "用户名不能为空");
+            if (userMapper.findByUsername(request.username()) != null)
+                throw new BusinessException("USER_USERNAME_EXISTS", "用户名已存在");
+        }
+        // ── 构造 MallUser ──
         MallUser user = new MallUser();
-        user.setUsername(request.username());
-        // 使用 BCrypt 对明文密码进行哈希加密后存储
+        user.setUsername(code != null && blankToNull(request.username()) == null
+                ? "user_" + phone.substring(phone.length() - 4) + "_" + RANDOM.nextInt(1000)
+                : request.username());
+        // 条件：验证码注册 且 用户没填用户名
+        // 真：自动生成 "user_1111_742"
+        // 假：用传进来的 username
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setNickname(request.nickname());
-        // 将空白字符串转为 null，避免空字符串违反唯一索引约束
-        user.setPhone(blankToNull(request.phone()));
+        user.setPhone(phone);
         user.setEmail(blankToNull(request.email()));
-        // 新注册用户默认角色为普通用户，状态为正常
         user.setRole("USER");
         user.setStatus(1);
-        // 执行插入，MyBatis 生成的 SQL 会回填自增主键
+
         userMapper.insert(user);
-        // 回查数据库，获取包含自增 ID、created_at、updated_at 等完整字段的用户对象
         return userMapper.findByUsername(user.getUsername());
     }
 
@@ -82,6 +99,36 @@ public class UserService {
         String token = tokenService.create(new CurrentUser(user.getId(), user.getUsername(), user.getRole()));
         // ⑤ 封装 LoginResult 返回：token、过期秒数、完整用户实体（由 Controller 层脱敏后返回前端）
         return new LoginResult(token, tokenService.getExpiresInSeconds(), user);
+    }
+
+    public LoginResult smsLogin(String phone, String code) {
+        if (!smsService.verifyCode(phone, "login", code))
+            throw new BusinessException("SMS_CODE_INVALID", "验证码错误或已过期");
+
+        MallUser user = userMapper.findByPhone(phone);
+        if (user == null) user = autoCreateByPhone(phone);
+
+        if (!Integer.valueOf(1).equals(user.getStatus()))
+            throw new BusinessException("AUTH_USER_DISABLED", "当前用户已被禁用");
+
+        String token = tokenService.create(new CurrentUser(user.getId(), user.getUsername(), user.getRole()));
+        return new LoginResult(token, tokenService.getExpiresInSeconds(), user);
+    }
+
+    private MallUser autoCreateByPhone(String phone) {
+        MallUser user = new MallUser();
+        user.setUsername("phone_" + phone);
+        user.setNickname("用户" + phone.substring(phone.length() - 4));
+        user.setPhone(phone);
+        user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+        user.setRole("USER");
+        user.setStatus(1);
+        try {
+            userMapper.insert(user);
+        } catch (Exception e) {
+            return userMapper.findByPhone(phone);
+        }
+        return userMapper.findByUsername(user.getUsername());
     }
 
     /**

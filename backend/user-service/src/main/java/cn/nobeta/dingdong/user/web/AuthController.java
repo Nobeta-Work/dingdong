@@ -3,9 +3,12 @@ package cn.nobeta.dingdong.user.web;
 import cn.nobeta.dingdong.common.api.ApiResponse;
 import cn.nobeta.dingdong.user.api.AuthRequests;
 import cn.nobeta.dingdong.user.api.UserResponses;
+import cn.nobeta.dingdong.user.service.SmsService;
 import cn.nobeta.dingdong.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * 认证控制器 —— 用户登录功能链路入口
@@ -15,14 +18,20 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/auth")
 public class AuthController {
     private final UserService userService;
-    public AuthController(UserService userService) { this.userService = userService; }
+    private final SmsService smsService;
+    public AuthController(UserService userService,SmsService smsService) {
+        this.userService = userService;
+        this.smsService = smsService;
+    }
+
     /**
      * 用户注册接口
      * 接收注册请求，委托 UserService 完成注册逻辑，
      * 将注册成功的用户实体转换为脱敏的 UserProfile 后封装为统一响应返回
      */
     @PostMapping("/register")
-    public ApiResponse<UserResponses.UserProfile> register(@Valid @RequestBody AuthRequests.RegisterRequest request) {
+    public ApiResponse<UserResponses.UserProfile> register(
+        @Valid @RequestBody AuthRequests.RegisterRequest request) {
         // 调用注册服务完成用户创建，将领域实体转为响应 DTO（脱敏处理），包装为统一成功响应
         return ApiResponse.success(UserResponses.UserProfile.from(userService.register(request)));
     }
@@ -42,4 +51,17 @@ public class AuthController {
         // ② 将 LoginResult 中的 token、有效期和脱敏用户信息组装为 LoginResponse，包装为统一成功响应
         return ApiResponse.success(new UserResponses.LoginResponse(result.token(), result.expiresIn(), UserResponses.UserProfile.from(result.user())));
     }
+
+    @PostMapping("/sms/code")
+    public ApiResponse<Map<String, Object>> sendSmsCode(@Valid @RequestBody AuthRequests.SendSmsCodeRequest request) {
+        smsService.sendCode(request.phone(), request.scene());
+        return ApiResponse.success(Map.of("expireSeconds", 300, "retryAfterSeconds", 60));
+    }
+
+    @PostMapping("/sms/login")
+    public ApiResponse<UserResponses.LoginResponse> smsLogin(@Valid @RequestBody AuthRequests.SmsLoginRequest request) {
+        UserService.LoginResult result = userService.smsLogin(request.phone(), request.code());
+        return ApiResponse.success(new UserResponses.LoginResponse(result.token(), result.expiresIn(), UserResponses.UserProfile.from(result.user())));
+    }
+
 }

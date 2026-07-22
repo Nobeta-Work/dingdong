@@ -24,7 +24,8 @@ public class GatewayRouteConfig {
                         .uri("lb://user-service"))
                 .route("order-admin-service", route -> route.path("/api/admin/orders/**", "/api/admin/dashboard/**")
                         .uri("lb://order-service"))
-                .route("product-service", route -> route.path("/api/categories/**", "/api/brands/**", "/api/products/**", "/api/seckill/**", "/api/admin/**")
+                .route("product-service", route -> route.path("/api/categories/**", "/api/brands/**", "/api/products/**",
+                                "/api/seckill/**", "/api/files", "/api/admin/**")
                         .uri("lb://product-service"))
                 .route("order-service", route -> route.path("/api/cart/**", "/api/orders/**")
                         .uri("lb://order-service"))

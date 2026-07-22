@@ -15,7 +15,9 @@ public class ProductDetailCacheService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final ProductMapper productMapper;
-    public ProductDetailCacheService(StringRedisTemplate redisTemplate, ObjectMapper objectMapper, ProductMapper productMapper) { this.redisTemplate = redisTemplate; this.objectMapper = objectMapper; this.productMapper = productMapper; }
+    public ProductDetailCacheService(StringRedisTemplate redisTemplate, ObjectMapper objectMapper, ProductMapper productMapper) {
+        this.redisTemplate = redisTemplate; this.objectMapper = objectMapper; this.productMapper = productMapper;
+    }
     public ProductDetail get(Long spuId) {
         String key = key(spuId);
         try {

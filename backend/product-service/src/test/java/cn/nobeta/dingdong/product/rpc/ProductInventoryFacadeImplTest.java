@@ -20,9 +20,9 @@ class ProductInventoryFacadeImplTest {
 		ProductMapper mapper=mock(ProductMapper.class);InventorySkuView sku=sku();when(mapper.findInventorySkuForUpdate(1L)).thenReturn(sku);when(mapper.countActiveLock("DD1",1L)).thenReturn(0);when(mapper.lockStock(1L,2)).thenReturn(1);
 		var result=new ProductInventoryFacadeImpl(mapper).lockInventory("DD1",List.of(new LockItem(1L,2)));
 		// 验证：返回的快照价格与数据库一致（99.90）
-		assertEquals(new BigDecimal("99.90"),result.getFirst().price());
+		assertEquals(new BigDecimal("99.90"),result.get(0).price());
 		// 验证：剩余可用库存 = 10 - 2 = 8
-		assertEquals(8,result.getFirst().availableStock());verify(mapper).insertInventoryLock("DD1",1L,2);
+		assertEquals(8,result.get(0).availableStock());verify(mapper).insertInventoryLock("DD1",1L,2);
 	}
 	/** 测试库存不足：抛出异常且不插入锁定记录 */
 	@Test void rejectsInsufficientStockWithoutCreatingLock() {

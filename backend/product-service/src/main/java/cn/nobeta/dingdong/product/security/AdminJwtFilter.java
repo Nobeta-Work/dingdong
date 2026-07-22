@@ -57,7 +57,7 @@ public class AdminJwtFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         boolean seckillProtected = ("POST".equals(request.getMethod()) && path.matches("/api/seckill/activities/[^/]+/orders"))
                 || path.startsWith("/api/seckill/orders/");
-        return !path.startsWith("/api/admin/") && !seckillProtected;
+        return !path.startsWith("/api/admin/") && !path.startsWith("/api/files") && !seckillProtected;
     }
 
     /**
@@ -87,7 +87,9 @@ public class AdminJwtFilter extends OncePerRequestFilter {
             reject(response, "AUTH_TOKEN_INVALID", "无效或已过期的登录令牌");
             return;
         }
-        if (request.getServletPath().startsWith("/api/admin/") && !"ADMIN".equals(claims.get("role"))) {
+        String path = request.getServletPath();
+        boolean adminProtected = path.startsWith("/api/admin/") || path.startsWith("/api/files");
+        if (adminProtected && !"ADMIN".equals(claims.get("role"))) {
             reject(response, "AUTH_FORBIDDEN", "需要管理员权限");
             return;
         }

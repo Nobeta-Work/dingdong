@@ -7,4 +7,13 @@ import java.math.BigDecimal;
  * 在 {@link cn.nobeta.dingdong.product.mapper.ProductMapper#search} 中
  * 通过 {@code k.price >= #{minPrice}} 和 {@code k.price <= #{maxPrice}} 实现过滤。
  */
-public record ProductQuery(String keyword, Long categoryId, Long brandId, BigDecimal minPrice, BigDecimal maxPrice, String sort, int size, int offset) { }
+public record ProductQuery(
+    String keyword,
+    Long categoryId,
+    Long brandId,
+    BigDecimal minPrice,
+    BigDecimal maxPrice,
+    String sort,
+    int size,
+    int offset
+) { }

@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   application:
     name: product-service
   config:
@@ -59,3 +61,12 @@ rocketmq:
   name-server: ${ROCKETMQ_NAMESRV_ADDR:127.0.0.1:9876}
   producer:
     group: dingdong-product-producer
+
+dingdong:
+  image-bed:
+    github:
+      repo: ${GITHUB_IMAGE_BED_REPO:-}
+      token: ${GITHUB_IMAGE_BED_TOKEN:${github.token}}
+      branch: ${GITHUB_IMAGE_BED_BRANCH:main}
+      folder: ${GITHUB_IMAGE_BED_FOLDER:product-images}
+      raw-base-url: ${GITHUB_IMAGE_BED_RAW_BASE_URL:https://raw.githubusercontent.com}

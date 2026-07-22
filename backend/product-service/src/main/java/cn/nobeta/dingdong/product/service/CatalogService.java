@@ -16,8 +16,12 @@ import java.util.List;
  */
 @Service
 public class CatalogService {
-    private final CategoryMapper categoryMapper; private final BrandMapper brandMapper; private final ProductMapper productMapper; private final ProductDetailCacheService detailCacheService;
-    public CatalogService(CategoryMapper categoryMapper, BrandMapper brandMapper, ProductMapper productMapper, ProductDetailCacheService detailCacheService) { this.categoryMapper=categoryMapper;this.brandMapper=brandMapper;this.productMapper=productMapper;this.detailCacheService=detailCacheService; }
+    private final CategoryMapper categoryMapper;
+    private final BrandMapper brandMapper;
+    private final ProductMapper productMapper;
+    private final ProductDetailCacheService detailCacheService;
+    public CatalogService(CategoryMapper categoryMapper, BrandMapper brandMapper, ProductMapper productMapper, ProductDetailCacheService detailCacheService)
+    { this.categoryMapper=categoryMapper;this.brandMapper=brandMapper;this.productMapper=productMapper;this.detailCacheService=detailCacheService; }
     /** 查询所有分类（按 enabledOnly 筛选启用/全部） */
     public List<Category> categories(boolean enabledOnly){return enabledOnly?categoryMapper.findEnabled():categoryMapper.findAll();}
     /** 查询所有品牌（按 enabledOnly 筛选启用/全部） */
@@ -26,24 +30,43 @@ public class CatalogService {
     @Transactional public Category saveCategory(Long id, CategoryRequest request) {
         Category category = id == null ? new Category() : requireCategory(id);
         Long parentId = request.parentId() == null ? 0L : request.parentId();
-        if (categoryMapper.countByName(request.name(), parentId) > 0 && (id == null || !request.name().equals(category.getName()) || !java.util.Objects.equals(parentId, category.getParentId()))) throw new BusinessException("PRODUCT_CATEGORY_EXISTS","同级分类名称已存在");
-        category.setName(request.name());category.setParentId(parentId);category.setSortOrder(request.sortOrder()==null?0:request.sortOrder());category.setStatus(request.status());
-        if(id==null) categoryMapper.insert(category); else categoryMapper.update(category); return requireCategory(category.getId());
+        if (categoryMapper.countByName(request.name(), parentId) > 0 && (id == null || !request.name().equals(category.getName()) || !java.util.Objects.equals(parentId, category.getParentId())))
+            throw new BusinessException("PRODUCT_CATEGORY_EXISTS","同级分类名称已存在");
+        category.setName(request.name());
+        category.setParentId(parentId);
+        category.setSortOrder(request.sortOrder()==null?0:request.sortOrder());
+        category.setStatus(request.status());
+        if(id==null) categoryMapper.insert(category);
+        else categoryMapper.update(category);
+        return requireCategory(category.getId());
     }
     /** 新增或更新品牌（品牌名不可重复） */
     @Transactional public Brand saveBrand(Long id, BrandRequest request) {
         Brand brand=id==null?new Brand():requireBrand(id);
         if(brandMapper.countByName(request.name())>0 && (id==null || !request.name().equals(brand.getName()))) throw new BusinessException("PRODUCT_BRAND_EXISTS","品牌名称已存在");
         brand.setName(request.name());brand.setLogoUrl(request.logoUrl());brand.setSortOrder(request.sortOrder()==null?0:request.sortOrder());brand.setStatus(request.status());
-        if(id==null) brandMapper.insert(brand);else brandMapper.update(brand);return requireBrand(brand.getId());
+        if(id==null) brandMapper.insert(brand);
+        else brandMapper.update(brand);
+        return requireBrand(brand.getId());
     }
     /** 新增或更新商品 SPU（校验分类、品牌存在性） */
     @Transactional public ProductSpu saveSpu(Long id, SpuRequest request) {
         ProductSpu spu=id==null?new ProductSpu():requireSpu(id);
-        if(categoryMapper.findById(request.categoryId())==null)throw new BusinessException("PRODUCT_CATEGORY_NOT_FOUND","商品分类不存在");
-        if(brandMapper.findById(request.brandId())==null)throw new BusinessException("PRODUCT_BRAND_NOT_FOUND","商品品牌不存在");
-        spu.setTitle(request.title());spu.setSubtitle(request.subtitle());spu.setDescription(request.description());spu.setMainImageUrl(request.mainImageUrl());spu.setCategoryId(request.categoryId());spu.setBrandId(request.brandId());spu.setStatus(request.status());
-        if(id==null)productMapper.insertSpu(spu);else productMapper.updateSpu(spu);detailCacheService.evict(spu.getId());return requireSpu(spu.getId());
+        if(categoryMapper.findById(request.categoryId())==null)
+            throw new BusinessException("PRODUCT_CATEGORY_NOT_FOUND","商品分类不存在");
+        if(brandMapper.findById(request.brandId())==null)
+            throw new BusinessException("PRODUCT_BRAND_NOT_FOUND","商品品牌不存在");
+        spu.setTitle(request.title());
+        spu.setSubtitle(request.subtitle());
+        spu.setDescription(request.description());
+        spu.setMainImageUrl(request.mainImageUrl());
+        spu.setCategoryId(request.categoryId());
+        spu.setBrandId(request.brandId());
+        spu.setStatus(request.status());
+        if(id==null)productMapper.insertSpu(spu);
+        else productMapper.updateSpu(spu);
+        detailCacheService.evict(spu.getId());
+        return requireSpu(spu.getId());
     }
 
     /**
@@ -59,19 +82,48 @@ public class CatalogService {
      * @return 持久化后的 SKU 实体
      */
     @Transactional public ProductSku saveSku(Long spuId, Long id, SkuRequest request) {
-        requireSpu(spuId); ProductSku sku=id==null?new ProductSku():requireSku(spuId,id);
-        sku.setSpuId(spuId);sku.setSkuCode(request.skuCode());sku.setSpecJson(request.specJson());sku.setPrice(request.price());sku.setAvailableStock(request.availableStock());sku.setStatus(request.status());
-        if(id==null) productMapper.insertSku(sku); else productMapper.updateSku(sku); detailCacheService.evict(spuId); return requireSku(spuId,sku.getId());
+        requireSpu(spuId);
+        ProductSku sku=id==null?new ProductSku():requireSku(spuId,id);
+        sku.setSpuId(spuId);
+        sku.setSkuCode(request.skuCode());
+        sku.setSpecJson(request.specJson());
+        sku.setPrice(request.price());
+        sku.setAvailableStock(request.availableStock());
+        sku.setStatus(request.status());
+        if(id==null) productMapper.insertSku(sku);
+        else productMapper.updateSku(sku);
+        detailCacheService.evict(spuId);
+        return requireSku(spuId,sku.getId());
     }
 
     /** 内部方法：按 ID 查询 SPU（不存在时抛异常） */
-    public ProductSpu requireSpu(Long id){ProductSpu spu=productMapper.findSpuById(id);if(spu==null)throw new BusinessException("PRODUCT_SPU_NOT_FOUND","商品不存在");return spu;}
+    public ProductSpu requireSpu(Long id){
+        ProductSpu spu=productMapper.findSpuById(id);
+        if(spu==null)throw new BusinessException("PRODUCT_SPU_NOT_FOUND","商品不存在");
+        return spu;
+    }
     /** 内部方法：按 ID 查询已上架 SPU（不存在或已下架时抛异常） */
-    public ProductSpu requirePublishedSpu(Long id){ProductSpu spu=productMapper.findPublishedSpuById(id);if(spu==null)throw new BusinessException("PRODUCT_SPU_NOT_FOUND","商品不存在或已下架");return spu;}
+    public ProductSpu requirePublishedSpu(Long id){
+        ProductSpu spu=productMapper.findPublishedSpuById(id);
+        if(spu==null)throw new BusinessException("PRODUCT_SPU_NOT_FOUND","商品不存在或已下架");
+        return spu;
+    }
     /** 内部方法：按 SPU+SKU ID 查询 SKU（不存在时抛异常） */
-    public ProductSku requireSku(Long spuId,Long id){ProductSku sku=productMapper.findSku(id,spuId);if(sku==null)throw new BusinessException("PRODUCT_SKU_NOT_FOUND","SKU 不存在");return sku;}
-    private Category requireCategory(Long id){Category v=categoryMapper.findById(id);if(v==null)throw new BusinessException("PRODUCT_CATEGORY_NOT_FOUND","商品分类不存在");return v;}
-    private Brand requireBrand(Long id){Brand v=brandMapper.findById(id);if(v==null)throw new BusinessException("PRODUCT_BRAND_NOT_FOUND","商品品牌不存在");return v;}
+    public ProductSku requireSku(Long spuId,Long id){
+        ProductSku sku=productMapper.findSku(id,spuId);
+        if(sku==null)throw new BusinessException("PRODUCT_SKU_NOT_FOUND","SKU 不存在");
+        return sku;
+    }
+    private Category requireCategory(Long id){
+        Category v=categoryMapper.findById(id);
+        if(v==null)throw new BusinessException("PRODUCT_CATEGORY_NOT_FOUND","商品分类不存在");
+        return v;
+    }
+    private Brand requireBrand(Long id){
+        Brand v=brandMapper.findById(id);
+        if(v==null)throw new BusinessException("PRODUCT_BRAND_NOT_FOUND","商品品牌不存在");
+        return v;
+    }
     /** 查询 SPU 下的 SKU 列表（按 saleable 筛选在售/全部） */
     public List<ProductSku> skus(Long spuId,boolean saleable){return saleable?productMapper.findSaleableSkusBySpuId(spuId):productMapper.findSkusBySpuId(spuId);}
     public List<ProductSpu> adminProducts(AdminProductQuery query){return productMapper.searchAdmin(query);}
