@@ -17,9 +17,11 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
     private final UserService userService;
     private final SmsService smsService;
-    public AuthController(UserService userService,SmsService smsService) {
+
+    public AuthController(UserService userService, SmsService smsService) {
         this.userService = userService;
         this.smsService = smsService;
     }
@@ -31,9 +33,11 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ApiResponse<UserResponses.UserProfile> register(
-        @Valid @RequestBody AuthRequests.RegisterRequest request) {
-        // 调用注册服务完成用户创建，将领域实体转为响应 DTO（脱敏处理），包装为统一成功响应
-        return ApiResponse.success(UserResponses.UserProfile.from(userService.register(request)));
+            @Valid @RequestBody AuthRequests.RegisterRequest request) {
+        UserResponses.UserProfile profile = UserResponses.UserProfile.from(
+                userService.register(request)
+        );
+        return ApiResponse.success(profile);
     }
 
     /**
@@ -45,23 +49,32 @@ public class AuthController {
      * @return 包含 JWT token、过期秒数、用户信息的统一响应
      */
     @PostMapping("/login")
-    public ApiResponse<UserResponses.LoginResponse> login(@Valid @RequestBody AuthRequests.LoginRequest request) {
-        // ① 调用 UserService.login()：查库校验用户名密码 → BCrypt 比对 → 校验账号状态 → 签发 JWT
+    public ApiResponse<UserResponses.LoginResponse> login(
+            @Valid @RequestBody AuthRequests.LoginRequest request) {
         UserService.LoginResult result = userService.login(request);
-        // ② 将 LoginResult 中的 token、有效期和脱敏用户信息组装为 LoginResponse，包装为统一成功响应
-        return ApiResponse.success(new UserResponses.LoginResponse(result.token(), result.expiresIn(), UserResponses.UserProfile.from(result.user())));
+        UserResponses.UserProfile profile = UserResponses.UserProfile.from(result.user());
+        UserResponses.LoginResponse loginResponse = new UserResponses.LoginResponse(
+                result.token(), result.expiresIn(), profile
+        );
+        return ApiResponse.success(loginResponse);
     }
 
     @PostMapping("/sms/code")
-    public ApiResponse<Map<String, Object>> sendSmsCode(@Valid @RequestBody AuthRequests.SendSmsCodeRequest request) {
+    public ApiResponse<Map<String, Object>> sendSmsCode(
+            @Valid @RequestBody AuthRequests.SendSmsCodeRequest request) {
         smsService.sendCode(request.phone(), request.scene());
         return ApiResponse.success(Map.of("expireSeconds", 300, "retryAfterSeconds", 60));
     }
 
     @PostMapping("/sms/login")
-    public ApiResponse<UserResponses.LoginResponse> smsLogin(@Valid @RequestBody AuthRequests.SmsLoginRequest request) {
+    public ApiResponse<UserResponses.LoginResponse> smsLogin(
+            @Valid @RequestBody AuthRequests.SmsLoginRequest request) {
         UserService.LoginResult result = userService.smsLogin(request.phone(), request.code());
-        return ApiResponse.success(new UserResponses.LoginResponse(result.token(), result.expiresIn(), UserResponses.UserProfile.from(result.user())));
+        UserResponses.UserProfile profile = UserResponses.UserProfile.from(result.user());
+        UserResponses.LoginResponse loginResponse = new UserResponses.LoginResponse(
+                result.token(), result.expiresIn(), profile
+        );
+        return ApiResponse.success(loginResponse);
     }
 
 }

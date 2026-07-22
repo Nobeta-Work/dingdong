@@ -23,16 +23,25 @@ import java.io.IOException;
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
     private final JwtTokenService tokenService;
     private final ObjectMapper objectMapper;
     private final UserMapper userMapper;
-    public JwtAuthenticationFilter(JwtTokenService tokenService, ObjectMapper objectMapper, UserMapper userMapper) { this.tokenService = tokenService; this.objectMapper = objectMapper; this.userMapper = userMapper; }
+
+    public JwtAuthenticationFilter(JwtTokenService tokenService,
+                                   ObjectMapper objectMapper,
+                                   UserMapper userMapper) {
+        this.tokenService = tokenService;
+        this.objectMapper = objectMapper;
+        this.userMapper = userMapper;
+    }
 
     /**
      * 跳过白名单路径：登录/注册接口（/api/auth/**）和健康检查（/actuator/**）
      * 登录接口本身不需要 token 即可访问
      */
-    @Override protected boolean shouldNotFilter(HttpServletRequest request) {
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getServletPath();
         return path.startsWith("/api/auth/") || path.startsWith("/actuator/");
     }
@@ -41,34 +50,46 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * 过滤请求的核心逻辑
      * 注意：使用 try-finally 确保无论认证成功与否，ThreadLocal 都会被清理
      */
-    @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        // ① 从请求头获取 Authorization 字段
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
+
         String authorization = request.getHeader("Authorization");
-        // ② 校验格式：必须以 "Bearer " 开头
-        if (authorization == null || !authorization.startsWith("Bearer ")) { writeUnauthorized(response, "AUTH_UNAUTHORIZED", "请先登录"); return; }
+
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            writeUnauthorized(response, "AUTH_UNAUTHORIZED", "请先登录");
+            return;
+        }
+
         try {
-            // ③ 去掉 "Bearer " 前缀（7 个字符），调用 JwtTokenService 解析校验 token
             CurrentUser currentUser = tokenService.parse(authorization.substring(7));
-            // ④ 查库确认用户存在且未被禁用（防止 token 有效但用户被后台禁用的情况）
+
             MallUser persistedUser = userMapper.findById(currentUser.id());
-            if (persistedUser == null || !Integer.valueOf(1).equals(persistedUser.getStatus())) { writeUnauthorized(response, "AUTH_USER_DISABLED", "当前用户已被禁用"); return; }
-            // ⑤ 认证通过，将用户信息绑定到当前线程的 ThreadLocal
+            if (persistedUser == null
+                    || !Integer.valueOf(1).equals(persistedUser.getStatus())) {
+                writeUnauthorized(response, "AUTH_USER_DISABLED", "当前用户已被禁用");
+                return;
+            }
+
             CurrentUserContext.set(currentUser);
-            // ⑥ 放行请求，进入后续 Filter 和 Controller
             filterChain.doFilter(request, response);
         } catch (RuntimeException exception) {
             writeUnauthorized(response, "AUTH_TOKEN_INVALID", exception.getMessage());
         } finally {
-            // ⑦ 请求处理完毕，清理 ThreadLocal（防止内存泄漏和线程复用时数据串扰）
             CurrentUserContext.clear();
         }
     }
 
     /** 返回 401 未授权的 JSON 响应 */
-    private void writeUnauthorized(HttpServletResponse response, String code, String message) throws IOException {
+    private void writeUnauthorized(HttpServletResponse response,
+                                   String code, String message) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getWriter(), new ErrorBody(code, message));
     }
+
     private record ErrorBody(String code, String message) { }
+
 }
