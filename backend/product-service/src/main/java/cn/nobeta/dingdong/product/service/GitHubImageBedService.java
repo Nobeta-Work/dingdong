@@ -62,7 +62,7 @@ public class GitHubImageBedService {
         String requestBody = buildRequestBody(path, content);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.github.com/repos/" + properties.repo() + "/contents/" + codePenath(path)))
+                .uri(URI.create("https://api.github.com/repos/" + properties.repo() + "/contents/" + encodePath(path)))
                 .header("Authorization", "Bearer " + properties.token())
                 .header("Accept", "application/vnd.github+json")
                 .header("X-GitHub-Api-Version", "2022-11-28")
