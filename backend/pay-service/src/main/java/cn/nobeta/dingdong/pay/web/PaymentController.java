@@ -1,3 +1,37 @@
 package cn.nobeta.dingdong.pay.web;
-import cn.nobeta.dingdong.common.api.ApiResponse;import cn.nobeta.dingdong.pay.api.*;import cn.nobeta.dingdong.pay.security.PayUserContext;import cn.nobeta.dingdong.pay.service.PaymentService;import jakarta.validation.Valid;import org.springframework.http.HttpStatus;import org.springframework.web.bind.annotation.*;
-@RestController @RequestMapping("/api/payments") public class PaymentController{private final PaymentService service;public PaymentController(PaymentService service){this.service=service;}@PostMapping @ResponseStatus(HttpStatus.CREATED)public ApiResponse<PaymentResponse>create(@Valid@RequestBody PaymentRequests.CreatePaymentRequest r){return ApiResponse.success(PaymentResponse.from(service.create(PayUserContext.require().id(),r.orderNo())));}@GetMapping("/{paymentNo}")public ApiResponse<PaymentResponse>detail(@PathVariable String paymentNo){return ApiResponse.success(PaymentResponse.from(service.require(PayUserContext.require().id(),paymentNo)));}@PostMapping("/{paymentNo}/simulate")public ApiResponse<PaymentResponse>simulate(@PathVariable String paymentNo,@Valid@RequestBody PaymentRequests.SimulatePaymentRequest r){return ApiResponse.success(PaymentResponse.from(service.simulate(PayUserContext.require().id(),paymentNo,r.success())));}}
+
+import cn.nobeta.dingdong.common.api.ApiResponse;
+import cn.nobeta.dingdong.pay.api.*;
+import cn.nobeta.dingdong.pay.security.PayUserContext;
+import cn.nobeta.dingdong.pay.service.PaymentService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/payments")
+public class PaymentController {
+    private final PaymentService service;
+
+    public PaymentController(PaymentService service) {
+        this.service = service;
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<PaymentResponse> create(@Valid @RequestBody PaymentRequests.CreatePaymentRequest r) {
+        return ApiResponse.success(PaymentResponse.from(service.create(PayUserContext.require().id(), r.orderNo())));
+    }
+
+    @GetMapping("/{paymentNo}")
+    public ApiResponse<PaymentResponse> detail(@PathVariable String paymentNo) {
+        return ApiResponse.success(PaymentResponse.from(service.require(PayUserContext.require().id(), paymentNo)));
+    }
+
+    @PostMapping("/{paymentNo}/simulate")
+    public ApiResponse<PaymentResponse> simulate(@PathVariable String paymentNo,
+            @Valid @RequestBody PaymentRequests.SimulatePaymentRequest r) {
+        return ApiResponse
+                .success(PaymentResponse.from(service.simulate(PayUserContext.require().id(), paymentNo, r.success())));
+    }
+}
