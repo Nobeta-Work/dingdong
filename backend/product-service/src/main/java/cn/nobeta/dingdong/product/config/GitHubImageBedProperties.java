@@ -6,6 +6,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * GitHub 图床上传配置。
  */
 @ConfigurationProperties(prefix = "github")
+/**
+ * repo仓库地址，token授权令牌，branch提交分支，cdnBaseUrl CDN加速域名，sslTrustStoreType SSL信任库类型
+ */
 public record GitHubImageBedProperties(
         String repo,
         String token,
@@ -24,7 +27,7 @@ public record GitHubImageBedProperties(
     public String sslTrustStoreType() {
         return sslTrustStoreType == null ? "" : sslTrustStoreType.trim();
     }
-
+/**尾部斜杠处理 */
     private String stripTrailingSlash(String value) {
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }

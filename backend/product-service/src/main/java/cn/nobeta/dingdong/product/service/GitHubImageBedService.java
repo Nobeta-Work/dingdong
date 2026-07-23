@@ -62,7 +62,7 @@ public class GitHubImageBedService {
         String requestBody = buildRequestBody(path, content);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.github.com/repos/" + properties.repo() + "/contents/" + encodePath(path)))
+                .uri(URI.create("https://api.github.com/repos/" + properties.repo() + "/contents/" + codePenath(path)))
                 .header("Authorization", "Bearer " + properties.token())
                 .header("Accept", "application/vnd.github+json")
                 .header("X-GitHub-Api-Version", "2022-11-28")
@@ -74,6 +74,7 @@ public class GitHubImageBedService {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                // 上传成功，封装图片访问地址和仓库存储路径返回
                 return new UploadResult(buildPublicUrl(path), path);
             }
             throw new BusinessException("FILE_UPLOAD_FAILED", extractMessage(response.body()));
@@ -90,6 +91,7 @@ public class GitHubImageBedService {
         return UUID.randomUUID().toString().replace("-", "") + extension;
     }
 
+    //提取文件后缀名
     private String resolveExtension(MultipartFile file) {
         String originalName = file.getOriginalFilename();
         if (originalName != null) {
@@ -143,18 +145,22 @@ public class GitHubImageBedService {
      * 未配置时仍使用 JVM 默认信任库；任何情况下都不会绕过 HTTPS 证书校验。
      */
     private HttpClient buildHttpClient(String trustStoreType) {
+        // 如果配置为空，直接返回默认客户端
         if (trustStoreType == null || trustStoreType.isBlank()) {
             return HttpClient.newBuilder().build();
         }
         try {
+            // 加载指定类型系统信任库
             KeyStore trustStore = KeyStore.getInstance(trustStoreType);
             trustStore.load(null, null);
+            //构建信任管理器工厂
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
                     TrustManagerFactory.getDefaultAlgorithm());
             trustManagerFactory.init(trustStore);
-
+            //初始化自定义SSLContext
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+            //构建HttpClient
             return HttpClient.newBuilder().sslContext(sslContext).build();
         } catch (GeneralSecurityException | IOException exception) {
             throw new IllegalStateException("无法加载 HTTPS 信任库：" + trustStoreType, exception);
