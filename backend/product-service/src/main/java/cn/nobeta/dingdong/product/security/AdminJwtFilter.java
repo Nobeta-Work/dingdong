@@ -88,7 +88,8 @@ public class AdminJwtFilter extends OncePerRequestFilter {
             return;
         }
         String path = request.getServletPath();
-        boolean adminProtected = path.startsWith("/api/admin/") || path.startsWith("/api/files");
+        // ! 共用接口
+        boolean adminProtected = path.startsWith("/api/admin/");
         if (adminProtected && !"ADMIN".equals(claims.get("role"))) {
             reject(response, "AUTH_FORBIDDEN", "需要管理员权限");
             return;
