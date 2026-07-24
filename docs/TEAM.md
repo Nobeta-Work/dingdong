@@ -1,163 +1,225 @@
----
-title: 叮咚商城开发迭代说明
-aliases:
-  - TEAM
-  - 开发迭代说明
-tags:
-  - project/ding-dong
-  - development/workflow
-status: active
-updated: 2026-07-22
-related:
-  - "[[PRD|产品需求文档]]"
-  - "[[GIT|Git 流程说明]]"
----
+# 叮咚商城项目报告
 
-# 叮咚商城开发迭代说明
+## 1. 项目简介
 
-> [!abstract] 开发目标
-> 2026-07-23 前交付可重复启动、可展示买家端与管理端页面的 `v0.9` 实训版。Docker Compose 负责后端中间件，Java 服务在本机手动启动；前端始终独立构建与发布，不加入 Compose。
+叮咚商城是一个基于 Spring Cloud Alibaba 治理开发的前后端分离电商项目平台。
 
-## 1. 开发原则
+项目在传统 Java Web 单体应用的基础上，适应电商场景高并发需求，进一步拆分为微服务架构，引入 Nacos、Dubbo、RocketMQ、Redis 等组件，实现服务注册发现、跨服务 RPC、异步消息队列、缓存与高并发秒杀治理。
 
-- 先验证基础设施，再实现业务功能。
-- 先确定数据模型和接口契约，再编写页面与服务代码。
-- 优先保证登录、商品浏览、购物车、下单、模拟支付主路径。
-- 每次提交保持小而完整，避免把多个无关功能混在一起。
-- 07-22 起只修复缺陷，不再扩展新增业务范围。
+***技术栈***
 
-## 2. 截止日前迭代节奏
+**前端：** *Vue3、TypeScript、Vite、Element-Plus*
 
-| 日期 | 迭代目标 | 交付物 |
-|---|---|---|
-| 07-15 至 07-16 | 工程基线与中间件 | Compose、数据库脚本、服务骨架、启动说明 |
-| 07-16 至 07-18 | 用户与商品 | 登录、用户/地址、分类、品牌、SPU/SKU 接口 |
-| 07-18 至 07-20 | 交易主链路 | 购物车、订单创建、库存校验、订单查询 |
-| 07-20 至 07-21 | 支付与状态 | 模拟支付、支付事件、发货状态 |
-| 07-21 至 07-22 | 集成与联调 | 前后端联调、异常修复、演示数据和脚本 |
-| 07-23 | 交付与展示 | Docker Compose 演示、页面展示、问题修复 |
+**后端：**
 
-## 3. 普通开发流程
+- *Java 21*
+- *Spring Boot v3.5.0*
+- *Spring Cloud v2025.0.0*
+- ***Spring Cloud Alibaba | v2025.0.0.0***
+- - *Nacos |v3.0.3* : 服务注册配置中心
+- - *LoadBalancer* : 请求转发负载均衡组件
+- - *Dubbo* : 远程过程调用 (RPC) 中间件
+- - *RocketMQ | v5.3.1* : 消息队列中间件
+- *Redis | v7.4* : 缓存中间件
+- *MyBatis* : 数据库连接层
+- *MySQL* : 业务数据持久化
 
-1. 阅读 [[PRD|产品需求文档]] 与接口约定，明确本次迭代的验收条件。
-2. 从 `main` 创建功能分支，先补充数据表或接口草案。
-3. 完成服务端实现、单元/接口自测和必要的版本化接口文档。
-4. 完成前端页面或调用示例，并进行一次端到端联调。
-5. 提交前执行 Maven 编译、相关测试和 `git diff --check`。
-6. 合并后重新启动 Compose 与受影响服务，确认主路径没有回归。
+项目中间件使用 *Docker Compose* 编排。
 
-## 4. 每项任务的完成标准
+## 2. 模块及其分工
 
-- [ ] 代码可编译，未提交 `target/`、本地配置或密码。
-- [ ] 接口文档包含请求、响应和主要错误码。
-- [ ] 正常、无权限、参数错误三类场景已自测。
-- [ ] 数据库变更使用版本化 SQL 脚本。
-- [ ] 页面或接口已完成一次前后端联调。
-- [ ] 变更已补充 README、演示数据或运行说明（如适用）。
+**小组成员** *(共4人)* ：吴占晟、杨添锦、彭一帆、朱笔锋
 
-## 5. Git 与变更约定
+| 模块       | 说明                              | 负责人 |
+| ---------- | --------------------------------- | ------ |
+| 微服务框架 | Nacos 治理、Dubbo RPC             | 吴占晟 |
+| 网关服务   | 统一入口、JWT 校验、请求路由      | 吴占晟 |
+| 用户服务   | 用户管理 CRUD、短信认证、JWT 鉴权 | 彭一帆 |
+| 商品服务   | 商品管理 CRUD、图床服务           | 朱笔锋 |
+| 订单服务   | Redis 缓存、秒杀场景治理          |        |
 
-- 分支命名、提交格式和合并方式遵循 [[GIT|Git 流程说明]]。
-- 接口字段、枚举、状态码变化时，先更新文档再修改调用方。
-- 卡住超过 30 分钟时记录现象、已尝试操作和报错，避免无记录重复试错。
-- 影响订单、库存或支付的数据问题优先处理，并在合并前完成回归验证。
+**整体架构**
 
-## 6. 当前实施状态（2026-07-22）
+```mermaid
+graph
+    F[前端] ==> G[Gateway]
+    G ==> U[用户服务]
+    G ==> P[商品服务]
+    G ==> O[订单服务]
+    G ==> Pay[支付服务]
 
-当前处于 **v0.8 全栈联调收口、v0.9 交付准备** 阶段。核心交易链路与管理端主功能已经完成运行态验收，后续以文档冻结、演示复核和可靠性增强为主。
+    classDef frontend fill:#E3F2FD,stroke:#1E88E5,stroke-width:2px,color:#0D47A1;
+    classDef gateway fill:#FFF3E0,stroke:#FB8C00,stroke-width:2px,color:#E65100;
+    classDef user fill:#E8F5E9,stroke:#43A047,stroke-width:2px,color:#1B5E20;
+    classDef product fill:#F3E5F5,stroke:#8E24AA,stroke-width:2px,color:#4A148C;
+    classDef order fill:#E0F7FA,stroke:#00ACC1,stroke-width:2px,color:#006064;
+    classDef payment fill:#FFEBEE,stroke:#E53935,stroke-width:2px,color:#B71C1C;
 
-| 区域 | 当前状态 | 依据与边界 |
-|---|---|---|
-| 基础设施 | 已完成 | Compose 已覆盖 MySQL、Redis、Nacos、RocketMQ，Java 服务仍以本机进程运行。 |
-| 服务治理 | 已完成 | 五个服务默认启用 Nacos 服务发现；Gateway 通过 `lb://服务名` 路由健康实例。 |
-| 后端业务 | 主路径已完成并联调 | Redis 购物车、订单状态流转、库存生命周期、模拟支付、延时关单、Outbox 和秒杀异步链路均已有实现。 |
-| 买家端前端 | 联调完成 | 密码/Mock 短信登录、商品、购物车、地址、下单、模拟支付和模拟物流展示均已接入。 |
-| 管理端前端 | 联调完成 | 商品、GitHub 图床、订单、用户、经营概览和秒杀控制台均已接入。 |
-| API 文档 | Markdown 契约已对齐 | 使用 v0.2–v0.6 版本化 Markdown 契约；不引入运行时文档生成组件。 |
-| 测试与验收 | 核心闭环通过 | 后端 22 项测试通过，前端生产构建通过；交易主链路已通过 Gateway 联调。 |
-| 部署边界 | 已冻结 | Compose 编排中间件；Java 服务手动运行；前端独立启动与发布。 |
+    class F frontend;
+    class G gateway;
+    class U user;
+    class P product;
+    class O order;
+    class Pay payment;
+```
 
-### 6.1 联调验收基线
+## 3. 项目亮点
+
+### 微服务架构设计
+
+**服务注册与发现**
+
+Gateway 接收前端统一的 `/api` 请求，`GatewayRouteConfig` 按路径转发到服务名；`lb://服务名` 由 Nacos 服务发现和 LoadBalancer 找到可用实例。
 
 ```mermaid
 flowchart LR
-    A[用户登录] --> B[浏览与选择 SKU]
-    B --> C[Redis 购物车]
-    C --> D[创建订单]
-    D --> E[模拟支付]
-    E --> F[订单 PAID]
-    F --> G[发货与收货]
-
-    classDef passed fill:#e8f7ef,stroke:#22a06b,color:#155e3b,stroke-width:2px
-    class A,B,C,D,E,F,G passed
+    F[前端请求] --> G[Gateway]
+    G -->L[LoadBalancer]
+    L -->|lb://user-service| U[用户服务]
+    L -->|lb://product-service| P[商品服务]
+    L -->|lb://order-service| O[订单服务]
+    L -->|lb://pay-service| Y[支付服务]
+    N[Nacos] -.服务注册与发现.-> L
 ```
 
-| 验收项 | 结果 | 证据口径 |
-|---|---|---|
-| 购物车与立即购买 | 通过 | Redis 正常读写，只结算指定商品 |
-| 支付状态闭环 | 通过 | `PENDING_PAYMENT` 经模拟支付迁移为 `PAID` |
-| 账户维护 | 通过 | 地址、联系方式和密码修改可用 |
-| 管理运营 | 通过 | 商品、订单、用户和经营统计接入真实接口 |
-| 构建与测试 | 通过 | 前端生产构建通过；后端 22 项测试通过 |
+**代码落点：** `GatewayRouteConfig`、`JwtGatewayFilter`、各服务的 `application.yml`。
 
-## 7. 亮点介绍
+**Dubbo 实现远程服务调用**
 
-> 按“技术方案 + 解决的问题 + 业务结果”描述，仅保留架构、并发和可靠性能力，不罗列常规 CRUD。
+`common` 模块打包为独立 JAR，被各服务作为 Maven 依赖引入。服务之间共享的是 `ProductInventoryFacade`、`UserAddressFacade`、`OrderPaymentFacade` 等接口契约，而不是直接访问对方数据库。
 
-- 基于 **Spring Cloud Alibaba、Gateway、Nacos 与 Dubbo** 拆分用户、商品、订单、支付微服务，通过服务发现、负载路由和独立数据 schema 明确服务边界，避免服务间跨库耦合。
-- 基于 **JWT + Gateway GlobalFilter** 实现统一令牌鉴权，并在下游服务二次校验用户状态和管理员角色；使用 **Spring Security Crypto / BCrypt** 存储密码，形成网关与服务双层安全边界。
-- 基于 **Redis Hash** 实现用户购物车，结合商品 RPC 动态补全价格、库存和有效状态；商品详情采用 Cache-Aside 思路缓存，并在管理操作后主动失效。
-- 通过 **GitHub Contents API** 建设商品图床，统一商品主图与品牌 Logo 上传、URL 回填、文件类型和大小校验；敏感 Token 仅通过环境变量注入。
-- 设计“**可用库存—锁定库存—销量**”三段式库存模型，通过 SKU 行锁、条件更新、业务幂等键和库存变更流水，防止并发下单造成超卖或重复扣减。
-- 面向秒杀场景，使用 **Redis Lua** 原子完成库存预扣、一人一单和请求防重，借助 **RocketMQ** 削峰异步落库，并提供失败回补及 Redis/MySQL 最终一致性检查。
-- 基于订单状态机约束 `PENDING_PAYMENT → PAID → SHIPPED → COMPLETED` 等合法迁移，结合 **RocketMQ 延时消息 + Outbox** 实现超时关单和消息发送重试。
-- 围绕重复请求和重复消息，为下单、库存、支付单和消息消费分别设计幂等边界，保证支付确认、库存释放和异步落库不会被重复执行。
-- 在支付、购物车和跨服务能力中分别应用 **策略模式、仓储模式与 Facade 模式**，隔离渠道实现、存储细节和 RPC 契约，提升核心链路的可替换性与可测试性。
+```mermaid
+flowchart
+    C[common<br/>RPC 接口契约] --> P[商品服务 Provider]
+    C --> U[用户服务 Provider]
+    C --> O[订单服务 Provider]
+
+    O -.Dubbo 调用.-> P
+    O -.Dubbo 调用.-> U
+    Y[支付服务 Consumer] -.Dubbo 调用.-> O
+```
+
+**实际业务：** 下单时订单服务通过 Dubbo 获取地址快照、校验并锁定库存；支付服务通过 Dubbo 获取可支付订单；支付成功后订单服务再调用商品服务确认库存。
+
+### JWT 登陆认证功能
+
+用户服务登录成功后签发 JWT。请求先经过 Gateway 校验签名和有效期，再由下游服务按自身安全边界进行校验；用户服务还会查库确认账户未被禁用。
+
+```mermaid
+sequenceDiagram
+    participant C as 前端
+    participant G as Gateway
+    participant S as 业务服务
+    participant U as 用户服务
+
+    C->>U: 登录 / 注册
+    U-->>C: JWT
+    C->>G: Bearer Token
+    G->>G: 校验签名、有效期
+    G->>S: 透传用户身份
+    S->>S: 服务内再次校验 / 获取当前用户
+    S-->>C: 业务响应
+```
+
+**代码落点：** `JwtGatewayFilter`、`JwtAuthenticationFilter`、`JwtTokenService`、各服务的 JWT Filter。
+
+### 缓存设计
+
+```mermaid
+flowchart TB
+    R[Redis]
+    R --> A[购物车<br/>Hash：用户 -> SKU]
+    R --> B[商品详情<br/>Cache-Aside，10 分钟 TTL]
+    R --> C[短信验证码<br/>验证码 5 分钟 / 频控 60 秒]
+    R --> D[秒杀状态<br/>Lua 原子预扣与请求防重]
+```
+
+- 购物车使用 Redis Hash 持久保存，结算前通过商品 RPC 补全最新价格、库存和商品状态。
+- 商品详情采用 Cache-Aside；管理端修改商品或 SKU 后主动失效缓存，Redis 异常时回退 MySQL。
+
+**代码落点：** `RedisCartRepository`、`ProductDetailCacheService`。
+
+### 短信验证功能
 
 ```mermaid
 flowchart LR
-    Client[客户端] --> Gateway[Gateway / JWT]
-    Gateway --> Services[业务微服务]
-    Services --> Redis[Redis<br/>缓存 / 购物车 / 秒杀预扣]
-    Services --> MQ[RocketMQ<br/>削峰 / 延时 / 异步事件]
-    MQ --> DB[MySQL<br/>事务落库 / 流水]
-    DB --> Check[一致性检查]
-    Redis --> Check
-
-    classDef entry fill:#eaf3ff,stroke:#1677ff,color:#0b3c78,stroke-width:2px
-    classDef infra fill:#fff4e5,stroke:#e6a23c,color:#7a4d00,stroke-width:2px
-    classDef data fill:#e8f7ef,stroke:#22a06b,color:#155e3b,stroke-width:2px
-    class Client,Gateway entry
-    class Redis,MQ infra
-    class Services,DB,Check data
+    A[发送验证码] --> B[SmsService]
+    B --> C{Redis}
+    C -->|sms:code| D[验证码 5 分钟过期]
+    C -->|sms:rate| E[60 秒发送频控]
+    D --> F[输入验证码]
+    F --> G[校验成功后删除验证码]
+    G --> H[登录 / 注册 / 换绑手机号]
 ```
 
-### 7.1 可以新增的特征方向
+当前未接入真实短信供应商，但 `SmsService` 仍完整实现验证码生成、Redis 存储、5 分钟过期、60 秒频控和成功后删除；Mock 模式下通过 `debugCode` 返回验证码，保证本地演示链路可闭环。
 
-以下内容尚未实现，不计入当前亮点：
+**代码落点：** `AuthController`、`SmsService`、`UserService`。
 
-| 方向 | 建议能力 |
-|---|---|
-| Redis 限流 | Gateway + Redis Lua 令牌桶，对登录、短信和秒杀入口按用户/IP 限流 |
-| 图床增强 | 增加图片删除、孤儿文件清理、CDN 与上传审计 |
-| 真实短信 | 第三方资质通过后接入云短信适配层；当前保留 Redis TTL、频控和 Mock 前端闭环 |
-| 可观测性 | Micrometer + Prometheus + Grafana，展示接口耗时、库存失败率和消息积压 |
-| 消息可靠性 | 支付 Outbox、事务消息、死信队列和人工补偿入口 |
-| 自动化压测 | 固化秒杀并发脚本，量化吞吐、成功率、无超卖和最终收敛时间 |
+### 图床服务功能
 
-## 8. 交付前剩余清单
+```mermaid
+flowchart LR
+    A[管理端上传图片] --> B[FileController]
+    B --> C[GitHubImageBedService]
+    C --> D{校验}
+    D -->|图片类型 / 5MB / 配置| E[GitHub Contents API]
+    E --> F[GitHub 仓库]
+    F --> G[jsDelivr CDN URL]
+    G --> H[商品 / 品牌图片地址]
+```
 
-1. [x] 补齐管理员订单列表与详情接口，使管理端订单查询、详情和发货可形成闭环。
-2. [x] 图片策略冻结为 GitHub 图床：管理端通过 `/api/files` 上传并回填公开 URL，也兼容手工 URL。
-3. [x] 冻结 v0.6 Markdown 接口契约；明确不引入 SpringDoc 等运行时文档组件。
-4. [x] 以 Gateway 为入口完成买家端、商品管理端和订单履约的端到端联调。
-5. [ ] 补充可重复的高并发压测与消息故障恢复脚本；当前已提供秒杀控制台与一致性检查接口。
-6. [x] 补充初始化演示数据、默认管理员说明和本地启动/关闭流程。
-7. [x] 冻结部署边界：Compose 启动中间件，Java 手动启动，前端独立构建发布；完成一次完整运行态验收。
+商品服务通过 GitHub Contents API 上传图片：校验文件类型和大小后，以随机文件名、Base64 内容和指定分支写入图床仓库，再返回 jsDelivr CDN 地址。仓库、分支和 Token 均通过配置或环境变量注入，不写入代码。
 
-## 9. 交付日前只做收口
+**代码落点：** `FileController`、`GitHubImageBedService`、`GitHubImageBedProperties`。
 
-1. 以版本化 Markdown 为准冻结接口字段和错误码，并补契约回归测试。
-2. 把已完成的人工联调步骤沉淀为可重复的最小验收脚本。
-3. 演示支付幂等、订单超时关闭、库存释放与秒杀最终一致性；不扩展真实支付、真实物流或个性化推荐。
-4. 按 README 从停止状态重新启动一次，复核演示账号、Mock 验证码、GitHub 图床和关键页面。
+### 秒杀场景治理
+
+```mermaid
+flowchart
+    A[秒杀请求] --> B[Redis Lua]
+    B -->|原子判断| C{库存 / 一人一单 / 请求防重}
+    C -->|成功| D[预扣 Redis 库存]
+    D --> E[RocketMQ 异步消息]
+    E --> F[MySQL 事务落库]
+    F --> G[扣减活动库存<br/>确认 SKU 库存<br/>写入秒杀订单]
+    F -->|失败| H[Redis 库存回补]
+    E -->|发送失败| H
+```
+
+**结果：** 高峰请求先在 Redis 中快速失败或排队，数据库只处理进入消息队列的请求；通过 `requestId`、数据库查询和库存流水避免重复落库，并提供 Redis/MySQL 库存一致性检查。
+
+### 幂等设计
+
+```mermaid
+flowchart LR
+    A[重复请求 / 重复消息] --> B[提取业务幂等键]
+    B --> C{是否已处理}
+    C -->|是| D[返回已有结果 / 直接结束]
+    C -->|否| E[执行一次业务操作]
+    E --> F[写入状态或业务流水]
+```
+
+- **下单：** 使用用户维度的 `requestId` 写入 `order_request`；重复提交时返回已创建订单，避免重复下单。
+- **支付与关单：** 只有 `PENDING_PAYMENT` 才能迁移到 `PAID` 或 `CANCELED`，重复消费不会再次确认或释放库存。
+- **库存调整：** 使用 `ADMIN_ADJUST:requestId` 作为库存流水业务键，重复操作直接返回已有记录。
+- **秒杀：** Redis Lua 同时校验请求 ID 和用户购买标记，数据库落库前再次按 `requestId` 查询，消息重复消费不会重复创建订单。
+
+**核心思想：** 幂等不是只依赖前端防重复点击，而是由 Redis 状态、数据库业务键和条件更新共同保证。
+
+## 4. 开发问题与解决
+
+```mermaid
+flowchart LR
+    B1[Dubbo Provider<br/>未注册] --> S1[启用 Dubbo 扫描<br/>统一 Nacos 配置]
+    B2[短信服务<br/>资质未通过] --> S2[Mock 替代<br/>保留 Redis 验证链路]
+    B3[图床上传<br/>指向错误] --> S3[修正仓库配置<br/>返回 CDN 地址]
+```
+
+| Bug | 现象与原因 | 解决 |
+| --- | --- | --- |
+| **微服务配置错误** | 商品服务未启用 Dubbo Provider 扫描，订单服务无法发现库存 RPC 实现 | 增加 `@EnableDubbo` 扫描 RPC 包；Nacos 地址改由环境变量统一注入 |
+| **短信服务不可用** | 第三方短信签名、模板资质未通过，真实验证码无法发送 | 使用 Mock 模式返回 `debugCode`；仍通过 Redis 实现 5 分钟过期、60 秒频控和成功后删除 |
+| **图床上传指向错误** | GitHub 仓库配置和公开访问地址不一致，导致上传失败或图片不可访问 | 校验 `owner/repository`，统一注入仓库、分支和 Token；上传后返回 jsDelivr CDN 地址 |
+
+**工程认识：** 问题修复不只追求“能够运行”，还要保留可替换接口、配置边界和失败提示，为后续接入真实基础设施留下扩展点。

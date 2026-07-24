@@ -389,6 +389,11 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
   .metric-band article + article { border-top: 1px solid var(--dd-line); }
 }
 
+ .seckill-product-option { display: flex; flex-direction: column; gap: 2px; line-height: 1.35; }
+ .seckill-product-option small, .seckill-selection-hint, .seckill-stock-hint { color: var(--dd-muted); font-size: 12px; }
+ .seckill-selection-hint { margin: 7px 0 0; line-height: 1.5; }
+ .seckill-stock-hint { margin-left: 10px; }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
